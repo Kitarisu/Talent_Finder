@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Upload CV / Lettre</title>
+    <style>
+        :root{
+            --bg:#f4f7fb;
+            --card:#ffffff;
+            --muted:#6b7280;
+            --primary:#2563eb;
+            --accent:#06b6d4;
+            --success:#16a34a;
+            --danger:#ef4444;
+            --shadow: 0 6px 18px rgba(22,28,37,0.08);
+            --radius:12px;
+            --gap:18px;
+            font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#eef3fb 60%);color:#0f172a}
+        .wrap{
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:36px;
+        }
+
+        .card{
+            width:100%;
+            max-width:980px;
+            background:var(--card);
+            border-radius:var(--radius);
+            box-shadow:var(--shadow);
+            padding:28px;
+            box-sizing:border-box;
+            display:flex;
+            flex-direction:column;
+            gap:16px;
+        }
+
+        .header{
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        .logo{
+            width:48px;height:48px;border-radius:10px;
+            background:linear-gradient(135deg,var(--primary),var(--accent));
+            display:grid;place-items:center;color:#fff;font-weight:700;
+            box-shadow: 0 6px 14px rgba(37,99,235,0.12);
+            flex:0 0 48px;
+        }
+
+        h2{margin:0;font-size:1.25rem}
+        p.lead{margin:0;color:var(--muted);font-size:0.95rem}
+
+        .grid{
+            display:grid;
+            grid-template-columns:1fr;
+            gap:var(--gap);
+            margin-top:6px;
+        }
+
+        @media(min-width:840px){ .grid{ grid-template-columns: 1fr 1fr; } }
+
+        .dropzone {
+            border:2px dashed #e6edf8;
+            padding:18px;
+            border-radius:10px;
+            text-align:center;
+            cursor:pointer;
+            background:linear-gradient(180deg,#fff,#f8fbff);
+            transition:all .18s ease;
+            box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+            min-height:140px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            gap:8px;
+        }
+        .dropzone:hover{ transform:translateY(-3px); box-shadow: 0 10px 24px rgba(16,24,40,0.06); }
+        .dropzone.dragover{ border-color:var(--primary); background:linear-gradient(180deg,#f0f7ff,#eef8ff); }
+
+        .dz-icon{
+            width:44px;height:44px;border-radius:8px;background:#eef6ff;display:grid;place-items:center;color:var(--primary);
+            box-shadow: inset 0 -4px 10px rgba(37,99,235,0.03);
+            font-weight:600;
+        }
+
+        .file-name { font-size:0.95rem; color:#0b1220; font-weight:600; }
+        .file-sub { color:var(--muted); font-size:0.85rem; }
+
+        .controls{
+            display:flex;
+            gap:12px;
+            align-items:center;
+            justify-content:space-between;
+            margin-top:8px;
+            flex-wrap:wrap;
+        }
+
+        .btn{
+            appearance:none;
+            border:0;
+            padding:10px 16px;
+            border-radius:10px;
+            cursor:pointer;
+            color:#fff;
+            background:linear-gradient(90deg,var(--primary),#1e40af);
+            box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+            font-weight:600;
+        }
+        .btn.secondary{
+            background:transparent;
+            color:var(--muted);
+            border:1px solid #e6edf8;
+            box-shadow:none;
+        }
+
+        #status{
+            font-size:0.95rem;
+            color:var(--muted);
+            margin-top:6px;
+        }
+
+        .meta{
+            display:flex;
+            gap:8px;
+            align-items:center;
+            color:var(--muted);
+            font-size:0.85rem;
+        }
+
+        footer.note{ margin-top:10px; color:var(--muted); font-size:0.85rem; text-align:right; }
+
+        /* small helpers */
+        .hidden{ display:none !important; }
+
+        /* new form row */
+        .form-row { display:flex; gap:12px; flex-wrap:wrap; }
+        .form-row input {
+            flex:1 1 180px;
+            padding:10px 12px;
+            border-radius:8px;
+            border:1px solid #e6edf8;
+            background:#fff;
+            box-shadow:0 2px 6px rgba(16,24,40,0.02);
+            font-size:0.95rem;
+        }
+        .form-row input:focus { outline:none; border-color:var(--primary); box-shadow: 0 6px 18px rgba(37,99,235,0.06); }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card" role="main" aria-labelledby="title">
+        <div class="header">
+            <div class="logo" aria-hidden="true">TF</div>
+            <div>
+                <h2 id="title">Déposer votre CV et votre lettre</h2>
+                <p class="lead">Glissez-déposez ou cliquez sur une zone pour sélectionner les fichiers (pdf, doc, docx).</p>
+            </div>
+        </div>
+
+        <form id="uploadForm" class="grid" autocomplete="off" novalidate>
+            <!-- nouveaux champs -->
+            <div style="grid-column:1/-1;">
+                <div class="form-row">
+                    <input type="text" id="firstName" name="firstName" placeholder="Prénom *" required />
+                    <input type="text" id="lastName" name="lastName" placeholder="Nom *" required />
+                    <input type="email" id="email" name="email" placeholder="Email (optionnel)" />
+                </div>
+            </div>
+
+            <div class="dropzone" id="cvZone" tabindex="0" aria-label="Zone de dépôt CV">
+                <div class="dz-icon">CV</div>
+                <div class="file-name" id="cvName">Aucun fichier sélectionné</div>
+                <div class="file-sub">Taille max recommandée : 2 MB</div>
+                <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" class="hidden" />
+            </div>
+
+            <div class="dropzone" id="letterZone" tabindex="0" aria-label="Zone de dépôt lettre de motivation">
+                <div class="dz-icon">LM</div>
+                <div class="file-name" id="letterName">Aucun fichier sélectionné</div>
+                <div class="file-sub">Taille max recommandée : 2 MB</div>
+                <input type="file" id="letterInput" name="letter" accept=".pdf,.doc,.docx" class="hidden" />
+            </div>
+
+            <!-- controls span full width -->
+            <div style="grid-column:1/-1; display:flex; flex-direction:column; gap:10px;">
+                <div class="controls">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button type="submit" class="btn">Envoyer</button>
+                        <button type="button" id="resetBtn" class="btn secondary">Réinitialiser</button>
+                    </div>
+                    <div class="meta" id="metaInfo">Aucun envoi</div>
+                </div>
+                <div id="status" aria-live="polite"></div>
+                <div class="note" style="font-size:0.8rem; color:var(--muted)">Les fichiers seront sauvegardés côté serveur dans resources/cv_candidate et resources/letter_candidate et renommés au format CV_NOM_PRENOM / LM_NOM_PRENOM.</div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function(){
+    function setupZone(zoneEl, inputEl, nameEl) {
+        zoneEl.addEventListener('click', ()=> inputEl.click());
+        zoneEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputEl.click(); } });
+
+        zoneEl.addEventListener('dragover', e => { e.preventDefault(); zoneEl.classList.add('dragover'); });
+        zoneEl.addEventListener('dragleave', e => { zoneEl.classList.remove('dragover'); });
+        zoneEl.addEventListener('drop', e => {
+            e.preventDefault();
+            zoneEl.classList.remove('dragover');
+            const f = e.dataTransfer.files && e.dataTransfer.files[0];
+            if (f) {
+                inputEl.files = e.dataTransfer.files;
+                nameEl.textContent = f.name;
+            }
+        });
+
+        inputEl.addEventListener('change', () => {
+            const f = inputEl.files[0];
+            nameEl.textContent = f ? f.name : 'Aucun fichier sélectionné';
+        });
+    }
+
+    const cvZone = document.getElementById('cvZone');
+    const cvInput = document.getElementById('cvInput');
+    const cvName = document.getElementById('cvName');
+    setupZone(cvZone, cvInput, cvName);
+
+    const letterZone = document.getElementById('letterZone');
+    const letterInput = document.getElementById('letterInput');
+    const letterName = document.getElementById('letterName');
+    setupZone(letterZone, letterInput, letterName);
+
+    const form = document.getElementById('uploadForm');
+    const status = document.getElementById('status');
+    const metaInfo = document.getElementById('metaInfo');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // nouveaux champs
+    const firstNameEl = document.getElementById('firstName');
+    const lastNameEl = document.getElementById('lastName');
+    const emailEl = document.getElementById('email');
+
+    resetBtn.addEventListener('click', ()=> {
+        cvInput.value = '';
+        letterInput.value = '';
+        cvName.textContent = 'Aucun fichier sélectionné';
+        letterName.textContent = 'Aucun fichier sélectionné';
+        status.textContent = '';
+        metaInfo.textContent = 'Aucun envoi';
+        firstNameEl.value = '';
+        lastNameEl.value = '';
+        emailEl.value = '';
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const firstName = (firstNameEl.value || '').trim();
+        const lastName = (lastNameEl.value || '').trim();
+        if (!firstName || !lastName) {
+            status.textContent = 'Le prénom et le nom sont requis pour renommer les fichiers.';
+            return;
+        }
+
+        status.textContent = 'Envoi en cours...';
+        metaInfo.textContent = 'Envoi...';
+        const fd = new FormData();
+        fd.append('firstName', firstName);
+        fd.append('lastName', lastName);
+        if (emailEl.value) fd.append('email', (emailEl.value || '').trim());
+        if (cvInput.files[0]) fd.append('cv', cvInput.files[0]);
+        if (letterInput.files[0]) fd.append('letter', letterInput.files[0]);
+
+        try {
+            const resp = await fetch('/upload', {
+                method: 'POST',
+                body: fd
+            });
+            const json = await resp.json();
+            if (!resp.ok) throw new Error(json.message || 'Erreur serveur');
+            status.textContent = json.message || 'Fichiers envoyés avec succès.';
+            metaInfo.textContent = 'Dernier envoi réussi';
+        } catch (err) {
+            status.textContent = 'Erreur lors de l\'envoi : ' + err.message;
+            metaInfo.textContent = 'Échec de l\'envoi';
+        }
+    });
+})();
+</script>
+</body>
+</html>
