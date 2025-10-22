@@ -1,30 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liste des candidats</title>
 <style>
-  body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f4f7fb;margin:0;padding:28px;color:#0f172a}
-  .box{max-width:1100px;margin:0 auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 8px 24px rgba(16,24,40,0.06)}
-  h1{margin:0 0 12px 0;font-size:1.25rem}
+  body{font-family:Arial,Helvetica,sans-serif;background:#f7f9fc;margin:0;padding:20px;color:#111}
+  .card{max-width:1000px;margin:0 auto;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
   table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #eef3fb}
-  th{color:#374151;font-weight:700;font-size:0.95rem}
-  td.name{font-weight:600}
-  .actions{display:flex;gap:8px}
-  a.btn{background:#2563eb;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:600}
-  a.muted{background:#f3f4f6;color:#374151;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #e6edf8}
-  .empty{color:#6b7280;padding:14px;text-align:center}
-  .note{color:#6b7280;margin-top:8px;font-size:0.9rem}
+  th,td{padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:left}
+  th{background:#fbfdff;font-weight:700}
+  .btn{display:inline-block;padding:6px 10px;border-radius:6px;text-decoration:none;color:#fff;background:#2563eb}
+  .muted{color:#6b7280}
+  .empty{text-align:center;padding:20px;color:#6b7280}
 </style>
 </head>
 <body>
-  <div class="box" role="main">
-    <h1>Liste des candidats</h1>
-    <div class="note">Les CV et lettres sont présentés par candidat. Cliquez pour télécharger.</div>
-
-    <div style="height:12px"></div>
+  <div class="card">
+    <h2>Liste des candidats</h2>
+    <p class="muted">CV et lettre liés par candidat.</p>
 
     <div id="content">
       <div class="empty">Chargement...</div>
@@ -32,84 +26,22 @@
   </div>
 
 <script>
-(async function(){
-  const content = document.getElementById('content');
-
-  function makeRow(c) {
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const trh = document.createElement('tr');
-    ['Candidat','CV','Lettre'].forEach(t => {
-      const th = document.createElement('th'); th.textContent = t; trh.appendChild(th);
-    });
-    thead.appendChild(trh);
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    c.forEach(item => {
-      const tr = document.createElement('tr');
-      // name
-      const tdName = document.createElement('td');
-      tdName.className = 'name';
-      tdName.textContent = item.displayName || item.base || '—';
-      tr.appendChild(tdName);
-
-      // CV
-      const tdCv = document.createElement('td');
-      if (item.cv) {
-        const a = document.createElement('a');
-        a.className = 'btn';
-        a.href = '/download/cv/' + encodeURIComponent(item.cv);
-        a.textContent = 'Télécharger CV';
-        a.setAttribute('download', item.cv);
-        tdCv.appendChild(a);
-      } else {
-        const s = document.createElement('span');
-        s.className = 'muted';
-        s.textContent = 'Pas de CV';
-        tdCv.appendChild(s);
-      }
-      tr.appendChild(tdCv);
-
-      // Letter
-      const tdLet = document.createElement('td');
-      if (item.letter) {
-        const a2 = document.createElement('a');
-        a2.className = 'btn';
-        a2.href = '/download/letter/' + encodeURIComponent(item.letter);
-        a2.textContent = 'Télécharger Lettre';
-        a2.setAttribute('download', item.letter);
-        tdLet.appendChild(a2);
-      } else {
-        const s2 = document.createElement('span');
-        s2.className = 'muted';
-        s2.textContent = 'Pas de lettre';
-        tdLet.appendChild(s2);
-      }
-      tr.appendChild(tdLet);
-
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    return table;
-  }
-
-  try {
-    const res = await fetch('/files');
-    if (!res.ok) throw new Error('Erreur serveur');
-    const json = await res.json();
-    const candidates = json.candidates || [];
-    if (!candidates.length) {
-      content.innerHTML = '<div class="empty">Aucun candidat trouvé</div>';
-      return;
-    }
-    content.innerHTML = '';
-    content.appendChild(makeRow(candidates));
-  } catch (err) {
-    content.innerHTML = '<div class="empty">Erreur lors du chargement</div>';
-    console.error(err);
-  }
-})();
+/* on récupère le JSON et on remplit le tableau par string HTML */
+fetch('/files').then(r => r.json()).then(json => {
+  const cand = (json.candidates || []);
+  if (!cand.length) { document.getElementById('content').innerHTML = '<div class="empty">Aucun candidat</div>'; return; }
+  let html = '<table><thead><tr><th>Candidat</th><th>CV</th><th>Lettre</th></tr></thead><tbody>';
+  cand.forEach(c => {
+    const name = c.displayName || c.base || '';
+    const cv = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
+    const lm = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
+    html += `<tr><td>${name}</td><td>${cv}</td><td>${lm}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}).catch(() => {
+  document.getElementById('content').innerHTML = '<div class="empty">Erreur lors du chargement</div>';
+});
 </script>
 </body>
 </html>
