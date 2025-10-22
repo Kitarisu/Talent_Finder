@@ -19,29 +19,33 @@
   <div class="card">
     <h2>Liste des candidats</h2>
     <p class="muted">CV et lettre liés par candidat.</p>
-
-    <div id="content">
-      <div class="empty">Chargement...</div>
-    </div>
+    <div id="content"><div class="empty">Chargement...</div></div>
   </div>
 
 <script>
-/* on récupère le JSON et on remplit le tableau par string HTML */
-fetch('/files').then(r => r.json()).then(json => {
-  const cand = (json.candidates || []);
-  if (!cand.length) { document.getElementById('content').innerHTML = '<div class="empty">Aucun candidat</div>'; return; }
-  let html = '<table><thead><tr><th>Candidat</th><th>CV</th><th>Lettre</th></tr></thead><tbody>';
-  cand.forEach(c => {
-    const name = c.displayName || c.base || '';
-    const cv = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
-    const lm = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
-    html += `<tr><td>${name}</td><td>${cv}</td><td>${lm}</td></tr>`;
+fetch('/files')
+  .then(res => res.ok ? res.json() : Promise.reject('Erreur serveur'))
+  .then(json => {
+    const candidates = json.candidates || [];
+    const container = document.getElementById('content');
+    if (!candidates.length) {
+      container.innerHTML = '<div class="empty">Aucun candidat</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>Candidat</th><th>CV</th><th>Lettre</th></tr></thead><tbody>';
+    candidates.forEach(c => {
+      const name = (c.displayName && c.displayName !== 'null') ? c.displayName : (c.base || '');
+      const cvLink = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
+      const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
+      html += `<tr><td>${name}</td><td>${cvLink}</td><td>${letterLink}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  })
+  .catch(err => {
+    console.error('fetch /files error', err);
+    document.getElementById('content').innerHTML = '<div class="empty">Erreur lors du chargement</div>';
   });
-  html += '</tbody></table>';
-  document.getElementById('content').innerHTML = html;
-}).catch(() => {
-  document.getElementById('content').innerHTML = '<div class="empty">Erreur lors du chargement</div>';
-});
 </script>
 </body>
 </html>

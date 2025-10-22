@@ -12,18 +12,25 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.text.Normalizer;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 public class UploadController {
 
-    private final Path cvDir = Paths.get("src/main/resources/cv_candidate");
-    private final Path letterDir = Paths.get("src/main/resources/letter_candidate");
+    // ne pas écrire dans src/main/resources pour éviter de déclencher un redémarrage devtools
+    private final Path cvDir = Paths.get("data", "cv_candidate");
+    private final Path letterDir = Paths.get("data", "letter_candidate");
+
+    // stockage en mémoire des candidats (initialisé au démarrage)
+    private final List<Candidate> candidates = new CopyOnWriteArrayList<>();
+    private final AtomicInteger idCounter = new AtomicInteger(1);
 
     public UploadController() throws IOException {
-        Files.createDirectories(cvDir);
-        Files.createDirectories(letterDir);
+        Files.createDirectories(cvDir);      // crée data/cv_candidate
+        Files.createDirectories(letterDir);  // crée data/letter_candidate
+        // candidates list starts empty; add initial entries here if needed
     }
 
     @PostMapping("/upload")
@@ -37,19 +44,40 @@ public class UploadController {
                 return ResponseEntity.badRequest().body(Map.of("message", "Email requis"));
             }
 
-            String base = sanitize(lastName) + "_" + sanitize(firstName);
+            Candidate cand = new Candidate(firstName, lastName, email);
+            cand.setId(idCounter.getAndIncrement());
 
             if (cv != null && !cv.isEmpty()) {
                 String ext = getExtension(cv.getOriginalFilename());
-                Files.copy(cv.getInputStream(), cvDir.resolve("CV_" + base + ext), StandardCopyOption.REPLACE_EXISTING);
+                String newName = "CV_" + cand.getBase() + ext;
+                Files.copy(cv.getInputStream(), cvDir.resolve(newName), StandardCopyOption.REPLACE_EXISTING);
+                cand.setCvFile(newName);
             }
 
             if (letter != null && !letter.isEmpty()) {
                 String ext = getExtension(letter.getOriginalFilename());
-                Files.copy(letter.getInputStream(), letterDir.resolve("LM_" + base + ext), StandardCopyOption.REPLACE_EXISTING);
+                String newName = "LM_" + cand.getBase() + ext;
+                Files.copy(letter.getInputStream(), letterDir.resolve(newName), StandardCopyOption.REPLACE_EXISTING);
+                cand.setLetterFile(newName);
             }
 
-            return ResponseEntity.ok(Map.of("message", "Upload réussi"));
+            candidates.add(cand);
+
+            System.out.println("Candidate added: id=" + cand.getId() + " base=" + cand.getBase()
+                    + " cv=" + cand.getCvFile() + " letter=" + cand.getLetterFile());
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Upload réussi",
+                    "candidate", Map.of(
+                            "id", cand.getId(),
+                            "firstName", cand.getFirstName(),
+                            "lastName", cand.getLastName(),
+                            "email", cand.getEmail(),
+                            "base", cand.getBase(),
+                            "cv", cand.getCvFile(),
+                            "letter", cand.getLetterFile()
+                    )
+            ));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Erreur: " + e.getMessage()));
@@ -58,47 +86,17 @@ public class UploadController {
 
     @GetMapping("/files")
     public ResponseEntity<?> listFiles() {
-        try {
-            Map<String, String> cvMap = new HashMap<>();
-            Map<String, String> letterMap = new HashMap<>();
-
-            for (Path p : Files.list(cvDir).filter(Files::isRegularFile).toArray(Path[]::new)) {
-                String f = p.getFileName().toString();
-                if (f.toUpperCase().startsWith("CV_")) {
-                    int idx = f.lastIndexOf('.');
-                    String base = (idx >= 0) ? f.substring(3, idx) : f.substring(3);
-                    cvMap.put(base, f);
-                }
-            }
-
-            for (Path p : Files.list(letterDir).filter(Files::isRegularFile).toArray(Path[]::new)) {
-                String f = p.getFileName().toString();
-                if (f.toUpperCase().startsWith("LM_")) {
-                    int idx = f.lastIndexOf('.');
-                    String base = (idx >= 0) ? f.substring(3, idx) : f.substring(3);
-                    letterMap.put(base, f);
-                }
-            }
-
-            Set<String> bases = new TreeSet<>();
-            bases.addAll(cvMap.keySet());
-            bases.addAll(letterMap.keySet());
-
-            List<Map<String, String>> candidates = new ArrayList<>();
-            for (String base : bases) {
-                Map<String, String> item = new HashMap<>();
-                item.put("base", base);
-                item.put("displayName", makeDisplayName(base));
-                item.put("cv", cvMap.getOrDefault(base, ""));
-                item.put("letter", letterMap.getOrDefault(base, ""));
-                candidates.add(item);
-            }
-
-            return ResponseEntity.ok(Map.of("candidates", candidates));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Impossible de lister les fichiers"));
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Candidate c : candidates) {
+            Map<String,Object> m = new HashMap<>();
+            m.put("id", c.getId());
+            m.put("base", c.getBase());
+            m.put("displayName", c.getDisplayName());
+            m.put("cv", c.getCvFile() == null ? "" : c.getCvFile());
+            m.put("letter", c.getLetterFile() == null ? "" : c.getLetterFile());
+            list.add(m);
         }
+        return ResponseEntity.ok(Map.of("candidates", list));
     }
 
     @GetMapping("/download/cv/{filename:.+}")
@@ -127,29 +125,9 @@ public class UploadController {
         }
     }
 
-    private String sanitize(String s) {
-        if (s == null) return "UNKNOWN";
-        String n = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-        n = n.replaceAll("[^A-Za-z0-9]+", "_").replaceAll("^_+|_+$", "").toUpperCase();
-        return n.isEmpty() ? "UNKNOWN" : n;
-    }
-
     private String getExtension(String filename) {
         if (filename == null) return "";
         int idx = filename.lastIndexOf('.');
         return (idx >= 0) ? filename.substring(idx) : "";
-    }
-
-    private String makeDisplayName(String base) {
-        if (base == null) return "";
-        String[] parts = base.split("_");
-        if (parts.length >= 2) return capitalize(parts[1]) + " " + capitalize(parts[0]);
-        return capitalize(base.replace('_', ' '));
-    }
-
-    private String capitalize(String s) {
-        s = s.toLowerCase(Locale.ROOT);
-        if (s.isEmpty()) return s;
-        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 }

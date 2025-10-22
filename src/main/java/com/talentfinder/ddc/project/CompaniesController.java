@@ -11,24 +11,24 @@ import java.util.List;
 @RequestMapping("/api")
 public class CompaniesController {
 
-    // Stockée dans une ArrayList (modifiable à l'exécution si besoin)
-    private final List<String> companies = new ArrayList<>(List.of(
-        "Acme Solutions",
-        "BlueRiver Technologies",
-        "Nova Industries",
-        "GreenLeaf Consultancy",
-        "Atlas Logistics",
-        "BrightSpace Learning",
-        "Orion Software",
-        "Helix Medical",
-        "Metro Retail Group",
-        "Solaris Energy"
+    // stockage dans une ArrayList modifiable
+    private final List<Company> companies = new ArrayList<>(List.of(
+        new Company(1, "Acme Solutions"),
+        new Company(2, "BlueRiver Technologies"),
+        new Company(3, "Nova Industries"),
+        new Company(4, "GreenLeaf Consultancy"),
+        new Company(5, "Atlas Logistics"),
+        new Company(6, "BrightSpace Learning"),
+        new Company(7, "Orion Software"),
+        new Company(8, "Helix Medical"),
+        new Company(9, "Metro Retail Group"),
+        new Company(10, "Solaris Energy")
     ));
 
     @GetMapping("/companies")
-    public List<String> getCompanies() {
+    public List<Company> getCompanies() {
         return companies;
     }
 
-
+   
 }
