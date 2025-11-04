@@ -13,16 +13,19 @@ public class CompaniesController {
 
     // stockage dans une ArrayList modifiable
     private final List<Company> companies = new ArrayList<>(List.of(
-        new Company(1, "Acme Solutions"),
-        new Company(2, "BlueRiver Technologies"),
-        new Company(3, "Nova Industries"),
-        new Company(4, "GreenLeaf Consultancy"),
-        new Company(5, "Atlas Logistics"),
-        new Company(6, "BrightSpace Learning"),
-        new Company(7, "Orion Software"),
-        new Company(8, "Helix Medical"),
-        new Company(9, "Metro Retail Group"),
-        new Company(10, "Solaris Energy")
+        new Company(1, "Kitarisu Solutions : 2025 COTY (Corporation of the Year) Premium edition with the limited edition figure of our CEO included!"),
+        new Company(2, "skibiTeam"),
+        new Company(3, "Bombardino CrocoCorp."),
+        new Company(4, "Beans Corp."),
+        new Company(5, "KMS Industry"),
+        new Company(6, "Sybau Aeronautics"),
+        new Company(7, "Gooners Expertise Inc."),
+        new Company(8, "The Bald Company"),
+        new Company(9, "Patapim Associations"),
+        new Company(10, "Cumpilator-3000"),
+        new Company(11, "The Brotherhood of Nerds"),
+        new Company(12, "Seg Fault Enterprises")
+
     ));
 
     @GetMapping("/companies")
