@@ -1,51 +1,122 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liste des candidats</title>
-<style>
-  body{font-family:Arial,Helvetica,sans-serif;background:#f7f9fc;margin:0;padding:20px;color:#111}
-  .card{max-width:1000px;margin:0 auto;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:left}
-  th{background:#fbfdff;font-weight:700}
-  .btn{display:inline-block;padding:6px 10px;border-radius:6px;text-decoration:none;color:#fff;background:#2563eb}
-  .muted{color:#6b7280}
-  .empty{text-align:center;padding:20px;color:#6b7280}
-</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Liste des candidats</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;background:#f7f9fc;margin:0;padding:20px;color:#111}
+        .card{max-width:1000px;margin:0 auto;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:left}
+        th{background:#fbfdff;font-weight:700}
+        .btn{display:inline-block;padding:6px 10px;border-radius:6px;text-decoration:none;color:#fff;background:#2563eb}
+        .muted{color:#6b7280}
+        .empty{text-align:center;padding:20px;color:#6b7280}
+        .controls{display:flex;gap:12px;align-items:center;margin-top:8px}
+        select{padding:6px;border-radius:6px;border:1px solid #ddd}
+
+        /* bouton flottant vers l'accueil */
+        .home-btn{
+            position:fixed;
+            right:20px;
+            bottom:20px;
+            z-index:999;
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:10px 14px;
+            background:#10b981;
+            color:#fff;
+            text-decoration:none;
+            border-radius:999px;
+            box-shadow:0 8px 24px rgba(16,185,129,0.18);
+            font-weight:700;
+            font-size:0.95rem;
+        }
+        .home-btn:hover{background:#0ea96f}
+        .home-btn:focus{outline:2px solid rgba(16,185,129,0.25);outline-offset:4px}
+        .home-icon{width:16px;height:16px;display:inline-block;flex:0 0 16px}
+    </style>
 </head>
 <body>
-  <div class="card">
+<div class="card">
     <h2>Liste des candidats</h2>
     <p class="muted">CV et lettre liés par candidat.</p>
+
+    <div class="controls">
+        <label for="posteFilter" class="muted">Filtrer par poste :</label>
+        <select id="posteFilter">
+            <option value="">Tous les postes</option>
+        </select>
+    </div>
+
     <div id="content"><div class="empty">Chargement...</div></div>
-  </div>
+</div>
+
+<!-- Bouton pour accéder à l'accueil (index.html) placé après le bloc -->
+<a href="/index" class="home-btn" aria-label="Aller à l'accueil">
+    <span class="home-icon" aria-hidden="true">
+        <!-- petit icône maison SVG -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
+        </svg>
+    </span>
+    Accueil
+</a>
 
 <script>
-fetch('/files')
-  .then(res => res.ok ? res.json() : Promise.reject('Erreur serveur'))
-  .then(json => {
-    const candidates = json.candidates || [];
-    const container = document.getElementById('content');
-    if (!candidates.length) {
-      container.innerHTML = '<div class="empty">Aucun candidat</div>';
-      return;
-    }
-    let html = '<table><thead><tr><th>Candidat</th><th>CV</th><th>Lettre</th></tr></thead><tbody>';
-    candidates.forEach(c => {
-      const name = (c.displayName && c.displayName !== 'null') ? c.displayName : (c.base || '');
-      const cvLink = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
-      const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
-      html += `<tr><td>${name}</td><td>${cvLink}</td><td>${letterLink}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-  })
-  .catch(err => {
-    console.error('fetch /files error', err);
-    document.getElementById('content').innerHTML = '<div class="empty">Erreur lors du chargement</div>';
-  });
+    (async function(){
+        const content = document.getElementById('content');
+        const posteFilter = document.getElementById('posteFilter');
+
+        function safe(val){ return (val && val !== 'null') ? val : ''; }
+
+        function buildTable(items, filter){
+            if (!items.length) {
+                content.innerHTML = '<div class="empty">Aucun candidat</div>';
+                return;
+            }
+            let html = '<table><thead><tr><th>Prénom</th><th>Nom</th><th>Poste</th><th>CV</th><th>Lettre</th></tr></thead><tbody>';
+            items.forEach(c => {
+                if (filter && (c.poste || '') !== filter) return;
+                const first = safe(c.firstName) || '<span class="muted">—</span>';
+                const last = safe(c.lastName) || '<span class="muted">—</span>';
+                const poste = safe(c.poste) || '<span class="muted">—</span>';
+                const cvLink = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
+                const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
+                html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        try {
+            const res = await fetch('/files');
+            if (!res.ok) throw new Error('Erreur serveur');
+            const json = await res.json();
+            const candidates = json.candidates || [];
+
+            // Remplir le select des postes uniques
+            const postes = Array.from(new Set(candidates.map(c => safe(c.poste)).filter(p => p)));
+            postes.sort((a,b) => a.localeCompare(b, 'fr'));
+            postes.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                posteFilter.appendChild(opt);
+            });
+
+            // affichage initial
+            buildTable(candidates, posteFilter.value);
+
+            // filtrage à la sélection
+            posteFilter.addEventListener('change', () => buildTable(candidates, posteFilter.value));
+        } catch (err) {
+            console.error('fetch /files error', err);
+            content.innerHTML = '<div class="empty">Erreur lors du chargement</div>';
+        }
+    })();
 </script>
 </body>
 </html>

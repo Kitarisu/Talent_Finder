@@ -1,88 +1,70 @@
 package com.talentfinder.ddc.project;
 
-import java.text.Normalizer;
-import java.util.Locale;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 
+@Entity
 public class Candidate {
-    private int id;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name; // conservé pour compatibilité (prénom + nom)
     private String firstName;
     private String lastName;
+    private String poste;
     private String email;
-    private String base;       // SANITIZED LAST_FIRST
-    private String cvFile;     // stored filename or null
-    private String letterFile; // stored filename or null
+
+    private String cvFileName;
+    private String cvContentType;
+    @Lob
+    private byte[] cvData;
+
+    private String letterFileName;
+    private String letterContentType;
+    @Lob
+    private byte[] letterData;
 
     public Candidate() {}
 
-    public Candidate(String firstName, String lastName, String email) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.base = makeBase(lastName, firstName);
-    }
+    // getters / setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
     public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-        this.base = makeBase(this.lastName, this.firstName);
-    }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
     public String getLastName() { return lastName; }
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-        this.base = makeBase(this.lastName, this.firstName);
-    }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getPoste() { return poste; }
+    public void setPoste(String poste) { this.poste = poste; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getBase() { return base; }
-    public void setBase(String base) { this.base = base; }
+    public String getCvFileName() { return cvFileName; }
+    public void setCvFileName(String cvFileName) { this.cvFileName = cvFileName; }
 
-    public String getCvFile() { return cvFile; }
-    public void setCvFile(String cvFile) { this.cvFile = cvFile; }
+    public String getCvContentType() { return cvContentType; }
+    public void setCvContentType(String cvContentType) { this.cvContentType = cvContentType; }
 
-    public String getLetterFile() { return letterFile; }
-    public void setLetterFile(String letterFile) { this.letterFile = letterFile; }
+    public byte[] getCvData() { return cvData; }
+    public void setCvData(byte[] cvData) { this.cvData = cvData; }
 
-    public String getDisplayName() {
-        String f = firstName == null ? "" : capitalize(firstName);
-        String l = lastName == null ? "" : capitalize(lastName);
-        return (f + " " + l).trim();
-    }
+    public String getLetterFileName() { return letterFileName; }
+    public void setLetterFileName(String letterFileName) { this.letterFileName = letterFileName; }
 
-    public static String makeBase(String lastName, String firstName) {
-        return sanitize(lastName) + "_" + sanitize(firstName);
-    }
+    public String getLetterContentType() { return letterContentType; }
+    public void setLetterContentType(String letterContentType) { this.letterContentType = letterContentType; }
 
-    public static String sanitize(String s) {
-        if (s == null) return "UNKNOWN";
-        String n = Normalizer.normalize(s, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-        n = n.replaceAll("[^A-Za-z0-9]+", "_")
-             .replaceAll("^_+|_+$", "")
-             .toUpperCase(Locale.ROOT);
-        return n.isEmpty() ? "UNKNOWN" : n;
-    }
-
-    private static String capitalize(String s) {
-        if (s == null || s.isEmpty()) return s == null ? "" : s;
-        s = s.toLowerCase(Locale.ROOT);
-        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
-    }
-
-    @Override
-    public String toString() {
-        return "Candidate{" +
-                "firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", base='" + base + '\'' +
-                ", cvFile='" + cvFile + '\'' +
-                ", letterFile='" + letterFile + '\'' +
-                '}';
-    }
+    public byte[] getLetterData() { return letterData; }
+    public void setLetterData(byte[] letterData) { this.letterData = letterData; }
 }

@@ -1,265 +1,178 @@
 package com.talentfinder.ddc.project;
 
-
-
-import org.springframework.core.io.Resource;
-
-import org.springframework.core.io.UrlResource;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
-
 import org.springframework.http.MediaType;
-
 import org.springframework.http.ResponseEntity;
-
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-
-
+import java.io.File;
 import java.io.IOException;
-
-import java.net.URLEncoder;
-
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import java.nio.file.*;
-
-import java.util.*;
-
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-
-
-@RestController
-
+@Controller
 public class UploadController {
 
+    @Autowired
+    private CandidateRepository candidateRepository;
+    private static final String UPLOAD_DIR = "uploads/";
 
-
-    // ne pas Ã©crire dans src/main/resources pour Ã©viter de dÃ©clencher un redÃ©marrage devtools
-
-    private final Path cvDir = Paths.get("data", "cv_candidate");
-
-    private final Path letterDir = Paths.get("data", "letter_candidate");
-
-
-
-    // stockage en mÃ©moire des candidats (initialisÃ© au dÃ©marrage)
-
-    private final List<Candidate> candidates = new CopyOnWriteArrayList<>();
-
-    private final AtomicInteger idCounter = new AtomicInteger(1);
-
-
-
-    public UploadController() throws IOException {
-
-        Files.createDirectories(cvDir);      // crÃ©e data/cv_candidate
-
-        Files.createDirectories(letterDir);  // crÃ©e data/letter_candidate
-
-        // candidates list starts empty; add initial entries here if needed
-
-    }
-
-
-
-    @PostMapping("/upload")
-
-    public ResponseEntity<?> upload(@RequestParam String firstName,
-
-                                    @RequestParam String lastName,
-
-                                    @RequestParam String email,
-
-                                    @RequestParam(required = false) MultipartFile cv,
-
-                                    @RequestParam(required = false) MultipartFile letter) {
-
+    @PostMapping("/apply")
+    public String handleFileUpload(@RequestParam("firstName") String firstName,
+                                   @RequestParam("lastName") String lastName,
+                                   @RequestParam("poste") String poste,
+                                   @RequestParam("email") String email,
+                                   @RequestParam("cvFile") MultipartFile file,
+                                   @RequestParam(value = "letterFile", required = false) MultipartFile letter,
+                                   Model model) {
         try {
+            File uploadDir = new File(UPLOAD_DIR);
+            if (!uploadDir.exists()) uploadDir.mkdirs();
 
-            if (email == null || email.trim().isEmpty()) {
+            byte[] cvBytes = file.getBytes();
+            String cvName = file.getOriginalFilename();
+            String cvType = file.getContentType();
 
-                return ResponseEntity.badRequest().body(Map.of("message", "Email requis"));
+            Candidate candidate = new Candidate();
+            candidate.setFirstName(firstName);
+            candidate.setLastName(lastName);
+            candidate.setName((firstName + " " + lastName).trim());
+            candidate.setPoste(poste);
+            candidate.setEmail(email);
 
-            }
-
-
-
-            Candidate cand = new Candidate(firstName, lastName, email);
-
-            cand.setId(idCounter.getAndIncrement());
-
-
-
-            if (cv != null && !cv.isEmpty()) {
-
-                String ext = getExtension(cv.getOriginalFilename());
-
-                String newName = "CV_" + cand.getBase() + ext;
-
-                Files.copy(cv.getInputStream(), cvDir.resolve(newName), StandardCopyOption.REPLACE_EXISTING);
-
-                cand.setCvFile(newName);
-
-            }
-
-
+            candidate.setCvFileName(cvName);
+            candidate.setCvContentType(cvType);
+            candidate.setCvData(cvBytes);
 
             if (letter != null && !letter.isEmpty()) {
-
-                String ext = getExtension(letter.getOriginalFilename());
-
-                String newName = "LM_" + cand.getBase() + ext;
-
-                Files.copy(letter.getInputStream(), letterDir.resolve(newName), StandardCopyOption.REPLACE_EXISTING);
-
-                cand.setLetterFile(newName);
-
+                candidate.setLetterFileName(letter.getOriginalFilename());
+                candidate.setLetterContentType(letter.getContentType());
+                candidate.setLetterData(letter.getBytes());
             }
 
+            // sauvegarde locale optionnelle
+            Path path = Paths.get(UPLOAD_DIR + cvName);
+            Files.write(path, cvBytes);
 
-
-            candidates.add(cand);
-
-
-
-            System.out.println("Candidate added: id=" + cand.getId() + " base=" + cand.getBase()
-
-                    + " cv=" + cand.getCvFile() + " letter=" + cand.getLetterFile());
-
-
-
-            return ResponseEntity.ok(Map.of(
-
-                    "message", "Upload rÃ©ussi",
-
-                    "candidate", Map.of(
-
-                            "id", cand.getId(),
-
-                            "firstName", cand.getFirstName(),
-
-                            "lastName", cand.getLastName(),
-
-                            "email", cand.getEmail(),
-
-                            "base", cand.getBase(),
-
-                            "cv", cand.getCvFile(),
-
-                            "letter", cand.getLetterFile()
-
-                    )
-
-            ));
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return ResponseEntity.status(500).body(Map.of("message", "Erreur: " + e.getMessage()));
-
+            candidateRepository.save(candidate);
+            model.addAttribute("message", "Candidature enregistrée avec succès !");
+        } catch (IOException e) {
+            model.addAttribute("message", "Erreur lors du téléchargement du CV : " + e.getMessage());
         }
-
+        return "candidater";
     }
-
-
 
     @GetMapping("/files")
-
-    public ResponseEntity<?> listFiles() {
-
-        List<Map<String, Object>> list = new ArrayList<>();
+    @ResponseBody
+    public Map<String, Object> listFiles() {
+        List<Candidate> candidates = candidateRepository.findAll();
+        List<Map<String, Object>> out = new ArrayList<>();
 
         for (Candidate c : candidates) {
-
-            Map<String,Object> m = new HashMap<>();
-
-            m.put("id", c.getId());
-
-            m.put("base", c.getBase());
-
-            m.put("displayName", c.getDisplayName());
-
-            m.put("cv", c.getCvFile() == null ? "" : c.getCvFile());
-
-            m.put("letter", c.getLetterFile() == null ? "" : c.getLetterFile());
-
-            list.add(m);
-
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", c.getId());
+            item.put("firstName", c.getFirstName());
+            item.put("lastName", c.getLastName());
+            item.put("displayName", (c.getFirstName() == null ? "" : c.getFirstName()) + " " + (c.getLastName() == null ? "" : c.getLastName()));
+            item.put("base", c.getEmail());
+            item.put("poste", c.getPoste());
+            item.put("cv", c.getCvFileName());
+            item.put("letter", c.getLetterFileName());
+            out.add(item);
         }
 
-        return ResponseEntity.ok(Map.of("candidates", list));
-
+        Map<String, Object> result = new HashMap<>();
+        result.put("candidates", out);
+        return result;
     }
 
+    // (les endpoints de téléchargement restent inchangés)
+    @GetMapping("/files/{id}/cv")
+    public ResponseEntity<ByteArrayResource> downloadCv(@PathVariable Long id) {
+        return (ResponseEntity<ByteArrayResource>) candidateRepository.findById(id)
+                .map(c -> {
+                    byte[] data = c.getCvData();
+                    if (data == null) return ResponseEntity.noContent().build();
+                    ByteArrayResource resource = new ByteArrayResource(data);
+                    String type = c.getCvContentType() != null ? c.getCvContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + c.getCvFileName() + "\"")
+                            .contentType(MediaType.parseMediaType(type))
+                            .contentLength(data.length)
+                            .body(resource);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
+    @GetMapping("/files/{id}/letter")
+    public ResponseEntity<ByteArrayResource> downloadLetter(@PathVariable Long id) {
+        return (ResponseEntity<ByteArrayResource>) candidateRepository.findById(id)
+                .map(c -> {
+                    byte[] data = c.getLetterData();
+                    if (data == null) return ResponseEntity.noContent().build();
+                    ByteArrayResource resource = new ByteArrayResource(data);
+                    String type = c.getLetterContentType() != null ? c.getLetterContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + c.getLetterFileName() + "\"")
+                            .contentType(MediaType.parseMediaType(type))
+                            .contentLength(data.length)
+                            .body(resource);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
-    @GetMapping("/download/cv/{filename:.+}")
-
-    public ResponseEntity<Resource> downloadCv(@PathVariable String filename) { return downloadFile(cvDir, filename); }
-
-
-
-    @GetMapping("/download/letter/{filename:.+}")
-
-    public ResponseEntity<Resource> downloadLetter(@PathVariable String filename) { return downloadFile(letterDir, filename); }
-
-
-
-    private ResponseEntity<Resource> downloadFile(Path dir, String filename) {
-
-        try {
-
-            String safe = filename.replaceAll("[\\\\/]+", "");
-
-            Path file = dir.resolve(safe).normalize();
-
-            if (!file.startsWith(dir.normalize()) || !Files.exists(file) || !Files.isRegularFile(file)) {
-
-                return ResponseEntity.notFound().build();
-
+    @GetMapping("/download/cv/{filename}")
+    public ResponseEntity<ByteArrayResource> downloadCvByFilename(@PathVariable String filename) {
+        String decoded = URLDecoder.decode(filename, StandardCharsets.UTF_8);
+        for (Candidate c : candidateRepository.findAll()) {
+            if (decoded.equals(c.getCvFileName())) {
+                byte[] data = c.getCvData();
+                if (data == null) return ResponseEntity.noContent().build();
+                ByteArrayResource resource = new ByteArrayResource(data);
+                String type = c.getCvContentType() != null ? c.getCvContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + c.getCvFileName() + "\"")
+                        .contentType(MediaType.parseMediaType(type))
+                        .contentLength(data.length)
+                        .body(resource);
             }
-
-            Resource r = new UrlResource(file.toUri());
-
-            String encoded = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8);
-
-            return ResponseEntity.ok()
-
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
-
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-
-                    .contentLength(Files.size(file))
-
-                    .body(r);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            return ResponseEntity.status(500).build();
-
         }
-
+        return ResponseEntity.notFound().build();
     }
 
-
-
-    private String getExtension(String filename) {
-
-        if (filename == null) return "";
-
-        int idx = filename.lastIndexOf('.');
-
-        return (idx >= 0) ? filename.substring(idx) : "";
-
+    @GetMapping("/download/letter/{filename}")
+    public ResponseEntity<ByteArrayResource> downloadLetterByFilename(@PathVariable String filename) {
+        String decoded = URLDecoder.decode(filename, StandardCharsets.UTF_8);
+        return (ResponseEntity<ByteArrayResource>) candidateRepository.findAll().stream()
+                .filter(c -> decoded.equals(c.getLetterFileName()))
+                .findFirst()
+                .map(c -> {
+                    byte[] data = c.getLetterData();
+                    if (data == null) return ResponseEntity.noContent().build();
+                    ByteArrayResource resource = new ByteArrayResource(data);
+                    String type = c.getLetterContentType() != null ? c.getLetterContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + c.getLetterFileName() + "\"")
+                            .contentType(MediaType.parseMediaType(type))
+                            .contentLength(data.length)
+                            .body(resource);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 }

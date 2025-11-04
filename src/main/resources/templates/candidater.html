@@ -1,122 +1,142 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Upload simple CV / Lettre</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;padding:18px;background:#f5f7fb;color:#111}
-    .wrap{max-width:720px;margin:0 auto;background:#fff;padding:14px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
-    label{display:block;margin:8px 0 4px;font-weight:600}
-    input[type="text"], input[type="email"]{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
-    .zones{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-    .dropzone{flex:1 1 200px;min-height:110px;border:2px dashed #bbb;border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;background:#fafafa;cursor:pointer}
-    .dropzone.hover{border-color:#333;background:#fff}
-    .small{font-size:0.9rem;color:#666;margin-top:6px}
-    button{margin-top:12px;padding:8px 12px;border:0;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer}
-    .status{margin-top:10px;color:#333}
-    .muted{color:#777}
-    .hidden{display:none}
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Upload simple CV / Lettre</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;padding:18px;background:#f5f7fb;color:#111}
+        .wrap{max-width:720px;margin:0 auto;background:#fff;padding:14px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+        label{display:block;margin:8px 0 4px;font-weight:600}
+        input[type="text"], input[type="email"]{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
+        .zones{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+        .dropzone{flex:1 1 200px;min-height:110px;border:2px dashed #bbb;border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;background:#fafafa;cursor:pointer}
+        .dropzone.hover{border-color:#333;background:#fff}
+        .small{font-size:0.9rem;color:#666;margin-top:6px}
+        button{margin-top:12px;padding:8px 12px;border:0;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer}
+        .status{margin-top:10px;color:#333}
+        .muted{color:#777}
+        .hidden{display:none}
+    </style>
 </head>
 <body>
-  <div class="wrap">
+<div class="wrap">
     <h2>Envoi simple</h2>
+    <form id="form" th:action="@{/apply}" method="post" enctype="multipart/form-data">
+        <label>Prénom :</label>
+        <input type="text" id="firstName" name="firstName" required>
 
-    <form id="form" autocomplete="off" novalidate>
-      <label for="firstName">Prénom *</label>
-      <input id="firstName" name="firstName" type="text" required>
+        <label>Nom :</label>
+        <input type="text" id="lastName" name="lastName" required>
 
-      <label for="lastName">Nom *</label>
-      <input id="lastName" name="lastName" type="text" required>
+        <label>Email :</label>
+        <input type="email" id="email" name="email" required>
 
-      <label for="email">Email *</label>
-      <input id="email" name="email" type="email" required>
+        <label>Poste :</label>
+        <input type="text" id="poste" name="poste">
 
-      <div class="zones">
-        <div class="dropzone" id="cvZone">Déposez le CV ici<br><span class="muted" id="cvLabel">Aucun fichier</span>
-          <input id="cvInput" name="cv" type="file" accept=".pdf,.doc,.docx" class="hidden">
+        <div class="zones">
+            <div id="cvZone" class="dropzone">
+                <div>
+                    <div id="cvLabel">Aucun fichier</div>
+                    <div class="small">Déposez votre CV (PDF)</div>
+                </div>
+            </div>
+            <input type="file" id="cvInput" name="cvFile" accept="application/pdf" class="hidden" required>
+
+            <div id="lmZone" class="dropzone">
+                <div>
+                    <div id="lmLabel">Aucun fichier</div>
+                    <div class="small">Lettre de motivation (optionnel)</div>
+                </div>
+            </div>
+            <input type="file" id="lmInput" name="letterFile" accept="application/pdf" class="hidden">
         </div>
 
-        <div class="dropzone" id="lmZone">Déposez la lettre ici<br><span class="muted" id="lmLabel">Aucun fichier</span>
-          <input id="lmInput" name="letter" type="file" accept=".pdf,.doc,.docx" class="hidden">
-        </div>
-      </div>
-
-      <div>
-        <button type="submit">Envoyer</button>
-        <span class="status" id="status"></span>
-      </div>
+        <button type="submit">Envoyer la candidature</button>
     </form>
 
-  </div>
+    <p id="status" th:text="${message}"></p>
+
+</div>
+<!-- Bouton pour accéder à l'accueil (index.html) placé après le bloc -->
+<a href="/index" class="home-btn" aria-label="Aller à l'accueil">
+    <span class="home-icon" aria-hidden="true">
+        <!-- petit icône maison SVG -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
+        </svg>
+    </span>
+    Accueil
+</a>
 
 <script>
-(function(){
-  function wire(zone, input, label){
-    zone.addEventListener('click', ()=> input.click());
-    zone.addEventListener('dragover', e=> { e.preventDefault(); zone.classList.add('hover'); });
-    zone.addEventListener('dragleave', ()=> zone.classList.remove('hover'));
-    zone.addEventListener('drop', e=> {
-      e.preventDefault(); zone.classList.remove('hover');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        input.files = e.dataTransfer.files;
-        label.textContent = e.dataTransfer.files[0].name;
-      }
-    });
-    input.addEventListener('change', ()=> {
-      label.textContent = input.files[0] ? input.files[0].name : 'Aucun fichier';
-    });
-  }
+    (function(){
+        function wire(zone, input, label){
+            zone.addEventListener('click', ()=> input.click());
+            zone.addEventListener('dragover', e=> { e.preventDefault(); zone.classList.add('hover'); });
+            zone.addEventListener('dragleave', ()=> zone.classList.remove('hover'));
+            zone.addEventListener('drop', e=> {
+                e.preventDefault(); zone.classList.remove('hover');
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    input.files = e.dataTransfer.files;
+                    label.textContent = e.dataTransfer.files[0].name;
+                }
+            });
+            input.addEventListener('change', ()=> {
+                label.textContent = input.files[0] ? input.files[0].name : 'Aucun fichier';
+            });
+        }
 
-  const cvZone = document.getElementById('cvZone');
-  const cvInput = document.getElementById('cvInput');
-  const cvLabel = document.getElementById('cvLabel');
-  wire(cvZone, cvInput, cvLabel);
+        const cvZone = document.getElementById('cvZone');
+        const cvInput = document.getElementById('cvInput');
+        const cvLabel = document.getElementById('cvLabel');
+        wire(cvZone, cvInput, cvLabel);
 
-  const lmZone = document.getElementById('lmZone');
-  const lmInput = document.getElementById('lmInput');
-  const lmLabel = document.getElementById('lmLabel');
-  wire(lmZone, lmInput, lmLabel);
+        const lmZone = document.getElementById('lmZone');
+        const lmInput = document.getElementById('lmInput');
+        const lmLabel = document.getElementById('lmLabel');
+        wire(lmZone, lmInput, lmLabel);
 
-  const form = document.getElementById('form');
-  const status = document.getElementById('status');
+        const form = document.getElementById('form');
+        const status = document.getElementById('status');
 
-  form.addEventListener('submit', async function(e){
-    e.preventDefault();
-    status.textContent = '';
+        form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            status.textContent = '';
 
-    const firstName = document.getElementById('firstName').value.trim();
-    const lastName = document.getElementById('lastName').value.trim();
-    const email = document.getElementById('email').value.trim();
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const poste = document.getElementById('poste').value.trim();
 
-    if (!firstName || !lastName || !email) {
-      status.textContent = 'Prénom, nom et email sont requis.';
-      return;
-    }
+            if (!firstName || !lastName || !email) {
+                status.textContent = 'Prénom, nom et email sont requis.';
+                return;
+            }
 
-    const fd = new FormData();
-    fd.append('firstName', firstName);
-    fd.append('lastName', lastName);
-    fd.append('email', email);
-    if (cvInput.files[0]) fd.append('cv', cvInput.files[0]);
-    if (lmInput.files[0]) fd.append('letter', lmInput.files[0]);
+            const fd = new FormData();
+            fd.append('firstName', firstName);
+            fd.append('lastName', lastName);
+            fd.append('email', email);
+            fd.append('poste', poste);
+            if (cvInput.files[0]) fd.append('cvFile', cvInput.files[0]);
+            if (lmInput.files[0]) fd.append('letterFile', lmInput.files[0]);
 
-    status.textContent = 'Envoi...';
-    try {
-      const res = await fetch('/upload', { method: 'POST', body: fd });
-      const json = await res.json().catch(()=>({}));
-      if (!res.ok) throw new Error(json.message || 'Erreur serveur');
-      status.textContent = json.message || 'OK';
-      // reset simple
-      cvInput.value = ''; lmInput.value = '';
-      cvLabel.textContent = 'Aucun fichier'; lmLabel.textContent = 'Aucun fichier';
-      form.reset();
-    } catch (err) {
-      status.textContent = 'Erreur: ' + (err.message || err);
-    }
-  });
-})();
+            status.textContent = 'Envoi...';
+            try {
+                const res = await fetch('/apply', { method: 'POST', body: fd });
+                // le contrôleur renvoie la vue HTML; on affiche OK si status 200
+                if (!res.ok) throw new Error('Erreur serveur');
+                status.textContent = 'Candidature envoyée';
+                cvInput.value = ''; lmInput.value = '';
+                cvLabel.textContent = 'Aucun fichier'; lmLabel.textContent = 'Aucun fichier';
+                form.reset();
+            } catch (err) {
+                status.textContent = 'Erreur: ' + (err.message || err);
+            }
+        });
+    })();
 </script>
 </body>
 </html>
