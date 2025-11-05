@@ -25,4 +25,5 @@ public class PageController {
     public String candidatures() {
         return "candidatures";
     }
+
 }

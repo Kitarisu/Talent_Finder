@@ -61,6 +61,14 @@
         .home-btn:hover{background:#0ea96f}
         .home-btn:focus{outline:2px solid rgba(16,185,129,0.25);outline-offset:4px}
         .home-icon{width:16px;height:16px;display:inline-block;flex:0 0 16px}
+
+        .btn-delete {
+            background: #ef4444; /* rouge */
+        }
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
     </style>
 </head>
 
@@ -121,7 +129,9 @@
                     const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
                     const answer = `<a class="btn btn-answer" href="/answer/${encodeURIComponent(c.id)}">Répondre</a>`;
                     const transfer = `<a class="btn btn-transfer" href="#" onclick="handleTransfer(${encodeURIComponent(c.id)}); return false;">Transférer</a>`;
-                    html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer}</td></tr>`;
+                    const del = `<a class="btn btn-delete" href="#" onclick="handleDelete(${encodeURIComponent(c.id)}); return false;">Supprimer</a>`;
+
+                    html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer} ${del}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 content.innerHTML = html;
@@ -165,6 +175,20 @@
             }
         }
 
+        async function handleDelete(id) {
+            if (!confirm("Voulez-vous vraiment supprimer ce candidat ?")) return;
+
+            try {
+                const res = await fetch(`/delete/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Erreur lors de la suppression');
+                alert("Candidat supprimé avec succès !");
+                location.reload(); // recharge la page pour actualiser la liste
+            } catch (err) {
+                alert('Erreur: ' + err.message);
+            }
+        }
+
+
         function showJsonModal(data) {
             document.getElementById('jsonResult').textContent = JSON.stringify(data, null, 2);
             document.getElementById('jsonModal').style.display = 'block';
@@ -179,6 +203,7 @@
         document.getElementById('jsonModal').addEventListener('click', function(e) {
             if (e.target === this) closeJsonModal();
         });
+
 
     </script>
 </body>
