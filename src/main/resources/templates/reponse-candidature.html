@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réponse à la candidature</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f7fb;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container { 
+            width: 90%;  /* augmenté de max-width à width */
+            max-width: 1200px; /* augmenté de 600px */
+            margin: 20px auto;
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 80vh; /* minimum height */
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: bold; 
+        }
+        select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px;
+            min-height: 200px; /* augmenté */
+            font-size: 16px;
+            resize: vertical;
+        }
+        button { 
+            background: #2563eb; 
+            color: white; 
+            border: 0; 
+            padding: 12px 24px; 
+            border-radius: 4px; 
+            cursor: pointer;
+            font-size: 16px;
+            align-self: flex-start;
+        }
+        button:hover { 
+            background: #1d4ed8; 
+        }
+        #resultat { 
+            margin-top: 30px; 
+            padding: 20px; 
+            background: #f8f9fa; 
+            border-radius: 4px; 
+            white-space: pre-wrap;
+            overflow-y: auto;
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .hidden { 
+            display: none; 
+        }
+        h2 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Répondre à la candidature</h2>
+        <form id="reponseForm">
+            <div class="form-group">
+                <label for="statut">Statut de la réponse :</label>
+                <select id="statut" name="statut" required>
+                    <option value="">Sélectionner une réponse</option>
+                    <option value="O">Acceptée</option>
+                    <option value="N">Refusée</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="commentaire">Commentaire :</label>
+                <textarea id="commentaire" name="commentaire"></textarea>
+            </div>
+            <button type="submit">Envoyer la réponse</button>
+        </form>
+        
+        <div id="resultat" class="hidden">
+            <h3>Réponse envoyée</h3>
+            <pre id="jsonResultat"></pre>
+        </div>
+    </div>
+
+    <script>
+        const candidatureId = window.location.pathname.split('/').pop();
+        if (!candidatureId) {
+            alert('ID de candidature manquant');
+            window.location.href = '/candidatures';
+        }
+
+        document.getElementById('reponseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                statut: document.getElementById('statut').value,
+                commentaire: document.getElementById('commentaire').value
+            };
+
+            try {
+                const response = await fetch(`/api/reponse/${candidatureId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) throw new Error('Erreur serveur');
+                
+                const result = await response.json();
+                
+                // Afficher le résultat
+                document.getElementById('jsonResultat').textContent = 
+                    JSON.stringify(result, null, 2);
+                document.getElementById('resultat').classList.remove('hidden');
+                document.getElementById('reponseForm').classList.add('hidden');
+
+            } catch (err) {
+                alert('Erreur: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

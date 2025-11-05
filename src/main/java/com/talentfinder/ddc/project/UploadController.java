@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
@@ -177,24 +178,40 @@ public class UploadController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/answer/{id}")
-    @ResponseBody
-    public ResponseEntity<Map<String,Object>> getAnswer(@PathVariable Long id) {
+   @GetMapping("/answer/{id}")
+    public String showAnswerForm(@PathVariable Long id, Model model) {
         return candidateRepository.findById(id)
-                .map(c -> {
+                .map(candidate -> {
+                    model.addAttribute("candidateId", id);
+                    model.addAttribute("candidateName", 
+                        candidate.getFirstName() + " " + candidate.getLastName());
+                    return "reponse-candidature";
+                })
+                .orElse("redirect:/candidatures");
+    }
+
+    @PostMapping("/api/reponse/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String,Object>> submitAnswer(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> reponse) {
+        
+        return candidateRepository.findById(id)
+                .map(candidate -> {
                     Map<String,Object> data = new HashMap<>();
-                    data.put("idCandidature", String.valueOf(c.getId()));
-
+                    data.put("idCandidature", String.valueOf(candidate.getId()));
+                    
                     Map<String,Object> reponseMap = new HashMap<>();
-                    reponseMap.put("statut", "O"); // par défaut ou selon logique entreprise
+                    reponseMap.put("statut", reponse.get("statut"));
                     data.put("reponse", reponseMap);
-
-                    data.put("commentaire", ""); // commentaire vide ou à compléter
-                    data.put("intitulePoste", c.getPoste());
+                    
+                    data.put("commentaire", reponse.get("commentaire"));
+                    data.put("intitulePoste", candidate.getPoste());
                     data.put("dateDecision", java.time.LocalDate.now().toString());
-
+                    
                     return ResponseEntity.ok()
-                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                            .header(HttpHeaders.CONTENT_TYPE, 
+                                MediaType.APPLICATION_JSON_VALUE)
                             .body(data);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());

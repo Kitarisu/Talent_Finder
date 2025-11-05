@@ -66,86 +66,120 @@
 
 
 <body>
-<div class="card">
-    <h2>Liste des candidats</h2>
-    <p class="muted">CV et lettre liés par candidat.</p>
-
-    <div class="controls">
-        <label for="posteFilter" class="muted">Filtrer par poste :</label>
-        <select id="posteFilter">
-            <option value="">Tous les postes</option>
-        </select>
+    <div id="jsonModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+        <div style="position:relative; width:90%; max-width:1200px; margin:40px auto; background:white; padding:30px; border-radius:8px; max-height:90vh; overflow-y:auto;">
+            <button onclick="closeJsonModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            <h3 style="margin-bottom:20px;">Résultat du transfert</h3>
+            <pre id="jsonResult" style="background:#f8f9fa; padding:20px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;"></pre>
+        </div>
     </div>
 
-    <div id="content"><div class="empty">Chargement...</div></div>
-</div>
+    <div class="card">
+        <h2>Liste des candidats</h2>
+        <p class="muted">CV et lettre liés par candidat.</p>
 
-<!-- Bouton pour accéder à l'accueil (index.html) placé après le bloc -->
-<a href="/" class="home-btn" aria-label="Aller à l'accueil">
-    <span class="home-icon" aria-hidden="true">
-        <!-- petit icône maison SVG -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
-        </svg>
-    </span>
-    Accueil
-</a>
+        <div class="controls">
+            <label for="posteFilter" class="muted">Filtrer par poste :</label>
+            <select id="posteFilter">
+                <option value="">Tous les postes</option>
+            </select>
+        </div>
 
-<script>
-    (async function(){
-        const content = document.getElementById('content');
-        const posteFilter = document.getElementById('posteFilter');
+        <div id="content"><div class="empty">Chargement...</div></div>
+    </div>
 
-        function safe(val){ return (val && val !== 'null') ? val : ''; }
+    <!-- Bouton pour accéder à l'accueil (index.html) placé après le bloc -->
+    <a href="/" class="home-btn" aria-label="Aller à l'accueil">
+        <span class="home-icon" aria-hidden="true">
+            <!-- petit icône maison SVG -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
+            </svg>
+        </span>
+        Accueil
+    </a>
 
-        function buildTable(items, filter){
-            if (!items.length) {
-                content.innerHTML = '<div class="empty">Aucun candidat</div>';
-                return;
+    <script>
+        (async function(){
+            const content = document.getElementById('content');
+            const posteFilter = document.getElementById('posteFilter');
+
+            function safe(val){ return (val && val !== 'null') ? val : ''; }
+
+            function buildTable(items, filter){
+                if (!items.length) {
+                    content.innerHTML = '<div class="empty">Aucun candidat</div>';
+                    return;
+                }
+                let html = '<table><thead><tr><th>Prénom</th><th>Nom</th><th>Poste</th><th>CV</th><th>Lettre</th><th>Actions</th></tr></thead><tbody>';
+                items.forEach(c => {
+                    if (filter && (c.poste || '') !== filter) return;
+                    const first = safe(c.firstName) || '<span class="muted">—</span>';
+                    const last = safe(c.lastName) || '<span class="muted">—</span>';
+                    const poste = safe(c.poste) || '<span class="muted">—</span>';
+                    const cvLink = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
+                    const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
+                    const answer = `<a class="btn btn-answer" href="/answer/${encodeURIComponent(c.id)}">Répondre</a>`;
+                    const transfer = `<a class="btn btn-transfer" href="#" onclick="handleTransfer(${encodeURIComponent(c.id)}); return false;">Transférer</a>`;
+                    html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
             }
-            let html = '<table><thead><tr><th>Prénom</th><th>Nom</th><th>Poste</th><th>CV</th><th>Lettre</th><th>Actions</th></tr></thead><tbody>';
-            items.forEach(c => {
-                if (filter && (c.poste || '') !== filter) return;
-                const first = safe(c.firstName) || '<span class="muted">—</span>';
-                const last = safe(c.lastName) || '<span class="muted">—</span>';
-                const poste = safe(c.poste) || '<span class="muted">—</span>';
-                const cvLink = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
-                const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
-                const answer = `<a class="btn btn-answer" href="/answer/${encodeURIComponent(c.id)}">Répondre</a>`;
-                const transfer = `<a class="btn btn-transfer" href="/transfer/${encodeURIComponent(c.id)}">Transférer</a>`;
-                html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer}</td></tr>`;
-            });
-            html += '</tbody></table>';
-            content.innerHTML = html;
+
+            try {
+                const res = await fetch('/files');
+                if (!res.ok) throw new Error('Erreur serveur');
+                const json = await res.json();
+                const candidates = json.candidates || [];
+
+                // Remplir le select des postes uniques
+                const postes = Array.from(new Set(candidates.map(c => safe(c.poste)).filter(p => p)));
+                postes.sort((a,b) => a.localeCompare(b, 'fr'));
+                postes.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p;
+                    opt.textContent = p;
+                    posteFilter.appendChild(opt);
+                });
+
+                // affichage initial
+                buildTable(candidates, posteFilter.value);
+
+                // filtrage à la sélection
+                posteFilter.addEventListener('change', () => buildTable(candidates, posteFilter.value));
+            } catch (err) {
+                console.error('fetch /files error', err);
+                content.innerHTML = '<div class="empty">Erreur lors du chargement</div>';
+            }
+        })();
+
+        async function handleTransfer(id) {
+           try {
+                const res = await fetch(`/transfer/${id}`);
+                if (!res.ok) throw new Error('Erreur serveur');
+                const data = await res.json();
+                showJsonModal(data);
+            } catch (err) {
+                alert('Erreur: ' + err.message);
+            }
         }
 
-        try {
-            const res = await fetch('/files');
-            if (!res.ok) throw new Error('Erreur serveur');
-            const json = await res.json();
-            const candidates = json.candidates || [];
-
-            // Remplir le select des postes uniques
-            const postes = Array.from(new Set(candidates.map(c => safe(c.poste)).filter(p => p)));
-            postes.sort((a,b) => a.localeCompare(b, 'fr'));
-            postes.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p;
-                opt.textContent = p;
-                posteFilter.appendChild(opt);
-            });
-
-            // affichage initial
-            buildTable(candidates, posteFilter.value);
-
-            // filtrage à la sélection
-            posteFilter.addEventListener('change', () => buildTable(candidates, posteFilter.value));
-        } catch (err) {
-            console.error('fetch /files error', err);
-            content.innerHTML = '<div class="empty">Erreur lors du chargement</div>';
+        function showJsonModal(data) {
+            document.getElementById('jsonResult').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('jsonModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
-    })();
 
-</script>
+        function closeJsonModal() {
+            document.getElementById('jsonModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('jsonModal').addEventListener('click', function(e) {
+            if (e.target === this) closeJsonModal();
+        });
+
+    </script>
 </body>
 </html>
