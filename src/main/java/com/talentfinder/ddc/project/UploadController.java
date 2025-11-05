@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -175,4 +177,63 @@ public class UploadController {
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/answer/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String,Object>> getAnswer(@PathVariable Long id) {
+        return candidateRepository.findById(id)
+                .map(c -> {
+                    Map<String,Object> data = new HashMap<>();
+                    data.put("idCandidature", String.valueOf(c.getId()));
+
+                    Map<String,Object> reponseMap = new HashMap<>();
+                    reponseMap.put("statut", "O"); // par défaut ou selon logique entreprise
+                    data.put("reponse", reponseMap);
+
+                    data.put("commentaire", ""); // commentaire vide ou à compléter
+                    data.put("intitulePoste", c.getPoste());
+                    data.put("dateDecision", java.time.LocalDate.now().toString());
+
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                            .body(data);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+
+
+    @GetMapping("/transfer/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> transferCandidate(@PathVariable Long id) {
+        return candidateRepository.findById(id)
+                .map(c -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("idCandidature", String.valueOf(c.getId()));
+                    data.put("nom", c.getLastName());
+                    data.put("prenom", c.getFirstName());
+                    data.put("mail", c.getEmail());
+                    data.put("telephone", ""); // à compléter si champ ajouté dans Candidate
+                    data.put("posteVise", c.getPoste());
+                    data.put("dateDisponibilite", "");
+                    data.put("dateCandidature", "");
+
+                    // Exemples de structures vides (à enrichir si tu ajoutes ces infos plus tard)
+                    data.put("diplomes", List.of());
+                    data.put("experiences", List.of());
+                    data.put("competences", List.of());
+                    data.put("permisDeConduite", List.of());
+                    data.put("langues", List.of());
+
+                    Map<String, Object> fichiers = new HashMap<>();
+                    fichiers.put("cv_filename", c.getCvFileName());
+                    fichiers.put("lm_filename", c.getLetterFileName());
+                    data.put("fichiers", fichiers);
+
+                    return ResponseEntity.ok(data);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
 }

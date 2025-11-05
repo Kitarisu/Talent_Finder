@@ -10,11 +10,35 @@
         table{width:100%;border-collapse:collapse;margin-top:12px}
         th,td{padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:left}
         th{background:#fbfdff;font-weight:700}
-        .btn{display:inline-block;padding:6px 10px;border-radius:6px;text-decoration:none;color:#fff;background:#2563eb}
         .muted{color:#6b7280}
         .empty{text-align:center;padding:20px;color:#6b7280}
         .controls{display:flex;gap:12px;align-items:center;margin-top:8px}
         select{padding:6px;border-radius:6px;border:1px solid #ddd}
+
+        /* bouton de téléchargement et actions */
+        .btn{
+            display:inline-block;
+            padding:6px 10px;
+            border-radius:6px;
+            text-decoration:none;
+            color:#fff;
+            background:#2563eb
+        }
+
+        .btn-answer {
+            background: #10b981; /* vert */
+        }
+        .btn-answer:hover {
+            background: #0e9e6e;
+        }
+
+        /* bouton Transférer */
+        .btn-transfer {
+            background: #f59e0b; /* orange */
+        }
+        .btn-transfer:hover {
+            background: #d97706;
+        }
 
         /* bouton flottant vers l'accueil */
         .home-btn{
@@ -39,6 +63,8 @@
         .home-icon{width:16px;height:16px;display:inline-block;flex:0 0 16px}
     </style>
 </head>
+
+
 <body>
 <div class="card">
     <h2>Liste des candidats</h2>
@@ -77,7 +103,7 @@
                 content.innerHTML = '<div class="empty">Aucun candidat</div>';
                 return;
             }
-            let html = '<table><thead><tr><th>Prénom</th><th>Nom</th><th>Poste</th><th>CV</th><th>Lettre</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Prénom</th><th>Nom</th><th>Poste</th><th>CV</th><th>Lettre</th><th>Actions</th></tr></thead><tbody>';
             items.forEach(c => {
                 if (filter && (c.poste || '') !== filter) return;
                 const first = safe(c.firstName) || '<span class="muted">—</span>';
@@ -85,7 +111,9 @@
                 const poste = safe(c.poste) || '<span class="muted">—</span>';
                 const cvLink = c.cv ? `<a class="btn" href="/download/cv/${encodeURIComponent(c.cv)}" download>CV</a>` : '<span class="muted">Pas de CV</span>';
                 const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
-                html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td></tr>`;
+                const answer = `<a class="btn btn-answer" href="/answer/${encodeURIComponent(c.id)}">Répondre</a>`;
+                const transfer = `<a class="btn btn-transfer" href="/transfer/${encodeURIComponent(c.id)}">Transférer</a>`;
+                html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer}</td></tr>`;
             });
             html += '</tbody></table>';
             content.innerHTML = html;
@@ -117,6 +145,7 @@
             content.innerHTML = '<div class="empty">Erreur lors du chargement</div>';
         }
     })();
+
 </script>
 </body>
 </html>
