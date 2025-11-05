@@ -55,7 +55,9 @@
         <input type="email" id="email" name="email" required>
 
         <label>Poste :</label>
-        <input type="text" id="poste" name="poste">
+        <select id="posteSelect" name="poste">
+            <option value="">Choisir</option>
+        </select>
 
         <div class="zones">
             <div id="cvZone" class="dropzone">
@@ -120,6 +122,42 @@
         const lmLabel = document.getElementById('lmLabel');
         wire(lmZone, lmInput, lmLabel);
 
+        // charger les postes pour le select
+        async function loadPosts() {
+            try {
+                const res = await fetch('/api/posts');
+                if (!res.ok) return;
+                const posts = await res.json();
+                const sel = document.getElementById('posteSelect');
+
+                posts.forEach(p => {
+                    const statut = (p.statut || '').toLowerCase();
+                    const isClosed = statut === 'ferme' || statut === 'closed';
+                    const opt = document.createElement('option');
+                    // si poste fermé, afficher mais désactiver pour qu'il ne soit pas sélectionnable
+                    if (isClosed) {
+                        opt.disabled = true;
+                        opt.textContent = `${p.intitule} — (fermé)`;
+                    } 
+                    else {
+                        opt.value = p.intitule || (p.id != null ? String(p.id) : '');
+                        opt.textContent = p.intitule;
+                    }
+                    sel.appendChild(opt);
+                });
+            const libre = document.createElement('option');
+            libre.value = 'libre';
+            libre.textContent = 'Libre (autre)';
+            sel.appendChild(libre);
+
+            } catch (e) {
+                console.warn('Impossible de charger les postes', e);
+            }
+        }
+
+        loadPosts();
+        const posteSelect = document.getElementById('posteSelect');
+
         const form = document.getElementById('form');
         const status = document.getElementById('status');
 
@@ -130,7 +168,7 @@
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
             const email = document.getElementById('email').value.trim();
-            const poste = document.getElementById('poste').value.trim();
+            const poste = document.getElementById('posteSelect').value.trim();
 
             if (!firstName || !lastName || !email) {
                 status.textContent = 'Prénom, nom et email sont requis.';
@@ -148,7 +186,6 @@
             status.textContent = 'Envoi...';
             try {
                 const res = await fetch('/apply', { method: 'POST', body: fd });
-                // le contrôleur renvoie la vue HTML; on affiche OK si status 200
                 if (!res.ok) throw new Error('Erreur serveur');
                 status.textContent = 'Candidature envoyée !';
                 cvInput.value = ''; lmInput.value = '';
