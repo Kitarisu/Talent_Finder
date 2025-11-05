@@ -16,14 +16,14 @@
             justify-content: center;
         }
         .container { 
-            width: 90%;  /* augmenté de max-width à width */
-            max-width: 1200px; /* augmenté de 600px */
+            width: 90%;
+            max-width: 1200px;
             margin: 20px auto;
             background: white; 
             padding: 30px; 
             border-radius: 8px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-height: 80vh; /* minimum height */
+            min-height: 80vh;
             display: flex;
             flex-direction: column;
         }
@@ -47,7 +47,7 @@
             padding: 12px; 
             border: 1px solid #ddd; 
             border-radius: 4px;
-            min-height: 200px; /* augmenté */
+            min-height: 200px;
             font-size: 16px;
             resize: vertical;
         }
@@ -83,6 +83,27 @@
             margin-bottom: 30px;
             font-size: 24px;
         }
+
+        .cand-btn{
+            position:fixed;
+            right:20px;
+            bottom:20px;
+            z-index:999;
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:10px 14px;
+            background:#10b981;
+            color:#fff;
+            text-decoration:none;
+            border-radius:999px;
+            box-shadow:0 8px 24px rgba(16,185,129,0.18);
+            font-weight:700;
+            font-size:0.95rem;
+        }
+        .cand-btn:hover{background:#0ea96f}
+        .cand-btn:focus{outline:2px solid rgba(16,185,129,0.25);outline-offset:4px}
+        .home-icon{width:16px;height:16px;display:inline-block;flex:0 0 16px}
     </style>
 </head>
 <body>
@@ -111,6 +132,16 @@
         </div>
     </div>
 
+    <a href="/" class="cand-btn" aria-label="Retourner à la liste des candidatures">
+        <span class="home-icon" aria-hidden="true">
+            <!-- petit icône maison SVG -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
+            </svg>
+        </span>
+          Candidatures
+    </a>
+    
     <script>
         const candidatureId = window.location.pathname.split('/').pop();
         if (!candidatureId) {
@@ -139,7 +170,6 @@
                 
                 const result = await response.json();
                 
-                // Afficher le résultat
                 document.getElementById('jsonResultat').textContent = 
                     JSON.stringify(result, null, 2);
                 document.getElementById('resultat').classList.remove('hidden');
