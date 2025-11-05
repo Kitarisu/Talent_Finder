@@ -39,7 +39,7 @@
             <div id="cvZone" class="dropzone">
                 <div>
                     <div id="cvLabel">Aucun fichier</div>
-                    <div class="small">Déposez votre CV (PDF)</div>
+                    <div class="small">Déposez votre CV (PDF, max: 1GB)</div>
                 </div>
             </div>
             <input type="file" id="cvInput" name="cvFile" accept="application/pdf" class="hidden" required>
@@ -47,7 +47,7 @@
             <div id="lmZone" class="dropzone">
                 <div>
                     <div id="lmLabel">Aucun fichier</div>
-                    <div class="small">Lettre de motivation (optionnel)</div>
+                    <div class="small">Lettre de motivation (PDF, max: 1GB)</div>
                 </div>
             </div>
             <input type="file" id="lmInput" name="letterFile" accept="application/pdf" class="hidden">
@@ -60,7 +60,7 @@
 
 </div>
 <!-- Bouton pour accéder à l'accueil (index.html) placé après le bloc -->
-<a href="/index" class="home-btn" aria-label="Aller à l'accueil">
+<a href="/" class="home-btn" aria-label="Aller à l'accueil">
     <span class="home-icon" aria-hidden="true">
         <!-- petit icône maison SVG -->
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
@@ -128,10 +128,15 @@
                 const res = await fetch('/apply', { method: 'POST', body: fd });
                 // le contrôleur renvoie la vue HTML; on affiche OK si status 200
                 if (!res.ok) throw new Error('Erreur serveur');
-                status.textContent = 'Candidature envoyée';
+                status.textContent = 'Candidature envoyée !';
                 cvInput.value = ''; lmInput.value = '';
                 cvLabel.textContent = 'Aucun fichier'; lmLabel.textContent = 'Aucun fichier';
                 form.reset();
+
+                setTimeout(() => {
+                    globalThis.location.replace("/");
+                }, 2000);
+
             } catch (err) {
                 status.textContent = 'Erreur: ' + (err.message || err);
             }
