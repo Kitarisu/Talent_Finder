@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class PageController {
 
     @GetMapping("/")
-    public String home() {
+    public String index() {
         return "index";
     }
 
@@ -16,14 +16,18 @@ public class PageController {
         return "candidater";
     }
 
-    @GetMapping("/entreprises")
-    public String entreprises() {
-        return "entreprises";
-    }
-
     @GetMapping("/candidatures")
     public String candidatures() {
         return "candidatures";
     }
 
+    @GetMapping("/entreprises")
+    public String entreprises() {
+        return "entreprises";
+    }
+
+    @GetMapping("/postes")
+    public String postes() {
+        return "postes";
+    }
 }

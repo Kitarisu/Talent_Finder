@@ -40,6 +40,8 @@ public class UploadController {
                                    @RequestParam("lastName") String lastName,
                                    @RequestParam("poste") String poste,
                                    @RequestParam("email") String email,
+                                   @RequestParam(value = "consentStorageData", defaultValue = "false") boolean consentStorageData,
+                                   @RequestParam(value = "consentShareData", defaultValue = "false") boolean consentShareData,
                                    @RequestParam("cvFile") MultipartFile file,
                                    @RequestParam(value = "letterFile", required = false) MultipartFile letter,
                                    Model model) {
@@ -57,6 +59,8 @@ public class UploadController {
             candidate.setName((firstName + " " + lastName).trim());
             candidate.setPoste(poste);
             candidate.setEmail(email);
+            candidate.setConsentStorageData(consentStorageData);
+            candidate.setConsentShareData(consentShareData);
 
             candidate.setCvFileName(cvName);
             candidate.setCvContentType(cvType);
@@ -249,6 +253,14 @@ public class UploadController {
 
                     return ResponseEntity.ok(data);
                 })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/api/candidate/{id}")
+    @ResponseBody
+    public ResponseEntity<Candidate> getCandidate(@PathVariable Long id) {
+        return candidateRepository.findById(id)
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Gestion des postes</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;background:#f7f9fc;margin:0;padding:20px;color:#111}
+        .box{max-width:900px;margin:0 auto;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+        h1{margin:0 0 12px 0;font-size:1.25rem}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left}
+        th{background:#fbfdff;font-weight:700}
+        .muted{color:#6b7280;font-size:0.95rem}
+        .empty{text-align:center;padding:20px;color:#6b7280}
+
+        /* boutons */
+        .btn{
+            display:inline-block;
+            padding:6px 10px;
+            border-radius:6px;
+            text-decoration:none;
+            color:#fff;
+            background:#2563eb;
+            font-size:0.9rem;
+            border:none;
+            cursor:pointer;
+            margin-right:4px;
+        }
+
+        .btn-delete {
+            background:#ef4444;
+        }
+        .btn-delete:hover {
+            background:#dc2626;
+        }
+
+        .btn-add {
+            background:#10b981;
+        }
+        .btn-add:hover {
+            background:#0e9e6e;
+        }
+
+        .btn-status {
+            background:#f59e0b;
+            font-size:0.85rem;
+            padding:4px 8px;
+        }
+        .btn-status:hover {
+            background:#d97706;
+        }
+
+        /* champ de recherche */
+        .search-box {
+            display:flex;
+            align-items:center;
+            gap:8px;
+            margin-bottom:12px;
+        }
+        .search-box input {
+            flex:1;
+            padding:6px 8px;
+            border:1px solid #ddd;
+            border-radius:6px;
+            font-size:0.95rem;
+        }
+
+        /* modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        .error-msg {
+            color: #ef4444;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fef2f2;
+            border-radius: 4px;
+            display: none;
+        }
+        .success-msg {
+            color: #10b981;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0fdf4;
+            border-radius: 4px;
+            display: none;
+        }
+
+        /* badge statut */
+        .badge-ouvert {
+            display:inline-block;
+            padding:4px 8px;
+            border-radius:4px;
+            background:#d1fae5;
+            color:#047857;
+            font-size:0.85rem;
+            font-weight:bold;
+        }
+        .badge-ferme {
+            display:inline-block;
+            padding:4px 8px;
+            border-radius:4px;
+            background:#fee2e2;
+            color:#dc2626;
+            font-size:0.85rem;
+            font-weight:bold;
+        }
+
+        /* bouton flottant vers l'accueil */
+        .home-btn{
+            position:fixed;
+            right:20px;
+            bottom:20px;
+            z-index:999;
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:10px 14px;
+            background:#10b981;
+            color:#fff;
+            text-decoration:none;
+            border-radius:999px;
+            box-shadow:0 8px 24px rgba(16,185,129,0.18);
+            font-weight:700;
+            font-size:0.95rem;
+        }
+        .home-btn:hover{background:#0ea96f}
+        .home-btn:focus{outline:2px solid rgba(16,185,129,0.25);outline-offset:4px}
+        .home-icon{width:16px;height:16px;display:inline-block;flex:0 0 16px}
+
+        .actions {
+            display:flex;
+            gap:6px;
+            flex-wrap:wrap;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>Postes à promouvoir</h1>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Rechercher un poste...">
+        <button class="btn btn-add" onclick="openAddModal()">Ajouter</button>
+    </div>
+
+    <div id="list">
+        <div class="empty">Chargement...</div>
+    </div>
+</div>
+
+<!-- Modal Ajouter -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeAddModal()">&times;</button>
+        <div class="modal-header">
+            <h2>Ajouter un poste</h2>
+        </div>
+
+        <div class="form-group">
+            <label for="intitule">Intitulé du poste :</label>
+            <input type="text" id="intitule" placeholder="ex: Développeur Java">
+        </div>
+
+        <div class="form-group">
+            <label for="statut">Statut :</label>
+            <select id="statut">
+                <option value="ouvert">Ouvert</option>
+                <option value="ferme">Fermé</option>
+            </select>
+        </div>
+
+        <button class="btn btn-add" onclick="addPoste()">Ajouter le poste</button>
+
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
+    </div>
+</div>
+
+<!-- Bouton candidatures -->
+<a href="/candidatures" class="home-btn" aria-label="Retourner aux candidatures">
+    <span class="home-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 19l-7-7h14l-7 7M5 12h14M5 12l2-9h8l2 9"/>
+        </svg>
+    </span>
+    Candidatures
+</a>
+
+<script>
+    let allPostes = [];
+
+    // Récupération de la liste
+    fetch('/api/posts')
+        .then(r => r.ok ? r.json() : Promise.reject('Erreur serveur'))
+        .then(postes => {
+            allPostes = postes || [];
+            renderList(allPostes);
+        })
+        .catch(() => {
+            document.getElementById('list').innerHTML = '<div class="empty">Impossible de charger la liste</div>';
+        });
+
+    // Affichage de la liste
+    function renderList(postes) {
+        const container = document.getElementById('list');
+        if (!postes || postes.length === 0) {
+            container.innerHTML = '<div class="empty">Aucun poste</div>';
+            return;
+        }
+
+        let html = '<table><thead><tr><th>Intitulé</th><th>Statut</th><th>Actions</th></tr></thead><tbody>';
+        postes.forEach(p => {
+            const badgeClass = (p.statut || '').toLowerCase() === 'ferme' ? 'badge-ferme' : 'badge-ouvert';
+            const badgeText = (p.statut || '').toLowerCase() === 'ferme' ? 'Fermé' : 'Ouvert';
+            const toggleText = (p.statut || '').toLowerCase() === 'ferme' ? 'Ouvrir' : 'Fermer';
+            
+            html += `
+      <tr>
+        <td>${p.intitule}</td>
+        <td><span class="${badgeClass}">${badgeText}</span></td>
+        <td>
+            <div class="actions">
+                <button class="btn btn-status" onclick="toggleStatut(${p.id}, '${p.statut}')">${toggleText}</button>
+                <a href="#" class="btn btn-delete" onclick="deletePoste(${p.id}); return false;">Supprimer</a>
+            </div>
+        </td>
+      </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // Recherche dynamique
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        const filtered = allPostes.filter(p => p.intitule.toLowerCase().includes(q));
+        renderList(filtered);
+    });
+
+    // Suppression d'un poste
+    async function deletePoste(id) {
+        if (!confirm("Voulez-vous vraiment supprimer ce poste ?")) return;
+        try {
+            const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Erreur serveur');
+            allPostes = allPostes.filter(p => p.id !== id);
+            renderList(allPostes);
+            alert("Poste supprimé !");
+        } catch (err) {
+            alert("Erreur: " + err.message);
+        }
+    }
+
+    // Changement du statut
+    async function toggleStatut(id, currentStatut) {
+        const newStatut = (currentStatut || '').toLowerCase() === 'ferme' ? 'ouvert' : 'ferme';
+        try {
+            const res = await fetch(`/api/posts/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ statut: newStatut })
+            });
+            if (!res.ok) throw new Error('Erreur serveur');
+            
+            const updatedPoste = await res.json();
+            const idx = allPostes.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                allPostes[idx] = updatedPoste;
+            }
+            renderList(allPostes);
+            alert(`Poste passé à "${newStatut}"`);
+        } catch (err) {
+            alert("Erreur: " + err.message);
+        }
+    }
+
+    // Gestion du modal
+    function openAddModal() {
+        document.getElementById('addModal').classList.add('active');
+        clearMessages();
+        document.getElementById('intitule').value = '';
+        document.getElementById('statut').value = 'ouvert';
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').classList.remove('active');
+        clearMessages();
+    }
+
+    function clearMessages() {
+        document.getElementById('errorMsg').style.display = 'none';
+        document.getElementById('successMsg').style.display = 'none';
+        document.getElementById('errorMsg').textContent = '';
+        document.getElementById('successMsg').textContent = '';
+    }
+
+    function showError(msg) {
+        clearMessages();
+        document.getElementById('errorMsg').textContent = msg;
+        document.getElementById('errorMsg').style.display = 'block';
+    }
+
+    function showSuccess(msg) {
+        clearMessages();
+        document.getElementById('successMsg').textContent = msg;
+        document.getElementById('successMsg').style.display = 'block';
+    }
+
+    // Ajouter un poste
+    async function addPoste() {
+        const intitule = document.getElementById('intitule').value.trim();
+        const statut = document.getElementById('statut').value.trim();
+
+        if (!intitule) {
+            showError('Veuillez entrer un intitulé de poste');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ intitule, statut })
+            });
+
+            if (!res.ok) throw new Error('Erreur serveur lors de l\'ajout');
+
+            const newPoste = await res.json();
+            allPostes.push(newPoste);
+            renderList(allPostes);
+
+            showSuccess(`Poste "${intitule}" ajouté avec succès !`);
+            setTimeout(() => closeAddModal(), 1500);
+        } catch (err) {
+            showError('Erreur : ' + err.message);
+        }
+    }
+
+    // Fermer le modal en cliquant en dehors
+    document.getElementById('addModal').addEventListener('click', function(e) {
+        if (e.target === this) closeAddModal();
+    });
+</script>
+</body>
+</html>

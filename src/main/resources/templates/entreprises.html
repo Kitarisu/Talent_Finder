@@ -22,6 +22,8 @@
             color:#fff;
             background:#2563eb;
             font-size:0.9rem;
+            border:none;
+            cursor:pointer;
         }
 
         .btn-delete {
@@ -29,6 +31,13 @@
         }
         .btn-delete:hover {
             background:#dc2626;
+        }
+
+        .btn-add {
+            background:#10b981; /* vert */
+        }
+        .btn-add:hover {
+            background:#0e9e6e;
         }
 
         /* champ de recherche */
@@ -44,6 +53,111 @@
             border:1px solid #ddd;
             border-radius:6px;
             font-size:0.95rem;
+        }
+
+        /* modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .form-group input[type="file"] {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        .tab-btn {
+            padding: 8px 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .error-msg {
+            color: #ef4444;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fef2f2;
+            border-radius: 4px;
+            display: none;
+        }
+        .success-msg {
+            color: #10b981;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0fdf4;
+            border-radius: 4px;
+            display: none;
         }
 
         /* bouton flottant vers l'accueil */
@@ -75,10 +189,45 @@
 
     <div class="search-box">
         <input type="text" id="searchInput" placeholder="Rechercher une entreprise...">
+        <button class="btn btn-add" onclick="openAddModal()">Ajouter</button>
     </div>
 
     <div id="list">
         <div class="empty">Chargement...</div>
+    </div>
+</div>
+
+<!-- Modal Ajouter -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeAddModal()">&times;</button>
+        <div class="modal-header">
+            <h2>Ajouter une entreprise</h2>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('text')">Texte JSON</button>
+            <button class="tab-btn" onclick="switchTab('file')">Fichier JSON</button>
+        </div>
+
+        <div id="text-tab" class="tab-content active">
+            <div class="form-group">
+                <label for="jsonText">Collez le JSON :</label>
+                <textarea id="jsonText" placeholder='{"idEntreprise": "ent123", "nomEntreprise": "Entreprise XYZ"}'></textarea>
+            </div>
+            <button class="btn btn-add" onclick="addFromText()">Ajouter depuis le texte</button>
+        </div>
+
+        <div id="file-tab" class="tab-content">
+            <div class="form-group">
+                <label for="jsonFile">Sélectionnez un fichier JSON :</label>
+                <input type="file" id="jsonFile" accept=".json">
+            </div>
+            <button class="btn btn-add" onclick="addFromFile()">Ajouter depuis le fichier</button>
+        </div>
+
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
     </div>
 </div>
 
@@ -106,7 +255,7 @@
             document.getElementById('list').innerHTML = '<div class="empty">Impossible de charger la liste</div>';
         });
 
-    // 🔹 Fonction d’affichage de la liste
+    // 🔹 Fonction d'affichage de la liste
     function renderList(companies) {
         const container = document.getElementById('list');
         if (!companies || companies.length === 0) {
@@ -137,7 +286,7 @@
     async function deleteCompany(id) {
         if (!confirm("Voulez-vous vraiment supprimer cette entreprise ?")) return;
         try {
-            const res = await fetch(`/companies/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Erreur serveur');
             allCompanies = allCompanies.filter(c => c.id !== id);
             renderList(allCompanies);
@@ -146,6 +295,131 @@
             alert("Erreur: " + err.message);
         }
     }
+
+    // 🔹 Gestion du modal
+    function openAddModal() {
+        document.getElementById('addModal').classList.add('active');
+        clearMessages();
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').classList.remove('active');
+        document.getElementById('jsonText').value = '';
+        document.getElementById('jsonFile').value = '';
+        clearMessages();
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tab + '-tab').classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function clearMessages() {
+        document.getElementById('errorMsg').style.display = 'none';
+        document.getElementById('successMsg').style.display = 'none';
+        document.getElementById('errorMsg').textContent = '';
+        document.getElementById('successMsg').textContent = '';
+    }
+
+    function showError(msg) {
+        clearMessages();
+        document.getElementById('errorMsg').textContent = msg;
+        document.getElementById('errorMsg').style.display = 'block';
+    }
+
+    function showSuccess(msg) {
+        clearMessages();
+        document.getElementById('successMsg').textContent = msg;
+        document.getElementById('successMsg').style.display = 'block';
+    }
+
+    // 🔹 Validation du JSON
+    function validateCompanyJSON(data) {
+        if (!data || typeof data !== 'object') {
+            throw new Error('Le JSON doit être un objet');
+        }
+        if (!data.idEntreprise || typeof data.idEntreprise !== 'string') {
+            throw new Error('Le champ "idEntreprise" est obligatoire et doit être une chaîne de caractères');
+        }
+        if (!data.nomEntreprise || typeof data.nomEntreprise !== 'string') {
+            throw new Error('Le champ "nomEntreprise" est obligatoire et doit être une chaîne de caractères');
+        }
+        return true;
+    }
+
+    // 🔹 Ajouter depuis texte
+    async function addFromText() {
+        const jsonText = document.getElementById('jsonText').value.trim();
+        if (!jsonText) {
+            showError('Veuillez coller un JSON valide');
+            return;
+        }
+
+        try {
+            const data = JSON.parse(jsonText);
+            validateCompanyJSON(data);
+            await submitCompany(data);
+        } catch (err) {
+            showError('Erreur de syntaxe JSON : ' + err.message);
+        }
+    }
+
+    // 🔹 Ajouter depuis fichier
+    async function addFromFile() {
+        const fileInput = document.getElementById('jsonFile');
+        if (!fileInput.files[0]) {
+            showError('Veuillez sélectionner un fichier JSON');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                validateCompanyJSON(data);
+                await submitCompany(data);
+            } catch (err) {
+                showError('Erreur de lecture du fichier JSON : ' + err.message);
+            }
+        };
+
+        reader.onerror = function() {
+            showError('Impossible de lire le fichier');
+        };
+
+        reader.readAsText(file);
+    }
+
+    // 🔹 Soumettre l'entreprise
+    async function submitCompany(data) {
+        try {
+            const res = await fetch('/api/companies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: data.nomEntreprise })
+            });
+
+            if (!res.ok) throw new Error('Erreur serveur lors de l\'ajout');
+
+            const newCompany = await res.json();
+            allCompanies.push(newCompany);
+            renderList(allCompanies);
+
+            showSuccess(`Entreprise "${data.nomEntreprise}" ajoutée avec succès !`);
+            setTimeout(() => closeAddModal(), 1500);
+        } catch (err) {
+            showError('Erreur : ' + err.message);
+        }
+    }
+
+    // Fermer le modal en cliquant en dehors
+    document.getElementById('addModal').addEventListener('click', function(e) {
+        if (e.target === this) closeAddModal();
+    });
 </script>
 </body>
 </html>

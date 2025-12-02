@@ -26,4 +26,10 @@ public class CompaniesController {
         companyRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/companies")
+    public ResponseEntity<Company> addCompany(@RequestBody Company company) {
+        Company saved = companyRepository.save(company);
+        return ResponseEntity.ok(saved);
+    }
 }

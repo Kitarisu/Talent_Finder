@@ -77,6 +77,21 @@
             <input type="file" id="lmInput" name="letterFile" accept="application/pdf" class="hidden">
         </div>
 
+        <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #2563eb;">
+            <div style="margin-bottom: 12px;">
+                <input type="checkbox" id="consentStorageData" name="consentStorageData" value="true">
+                <label for="consentStorageData" style="display: inline; margin-left: 8px; font-weight: normal;">
+                    J'accepte le stockage de mes données par l'entreprise
+                </label>
+            </div>
+            <div>
+                <input type="checkbox" id="consentShareData" name="consentShareData" value="true" disabled>
+                <label for="consentShareData" style="display: inline; margin-left: 8px; font-weight: normal; color: #9ca3af;">
+                    J'accepte le partage de mes données avec d'autres entreprises partenaires
+                </label>
+            </div>
+        </div>
+
         <button type="submit">Envoyer la candidature</button>
     </form>
 
@@ -156,6 +171,19 @@
         }
 
         loadPosts();
+        const consentStorageData = document.getElementById('consentStorageData');
+        const consentShareData = document.getElementById('consentShareData');
+        const consentShareLabel = consentShareData.nextElementSibling;
+
+        consentStorageData.addEventListener('change', function() {
+            consentShareData.disabled = !this.checked;
+            if (!this.checked) {
+                consentShareData.checked = false;
+                consentShareLabel.style.color = '#9ca3af';
+            } else {
+                consentShareLabel.style.color = 'inherit';
+            }
+        });
         const posteSelect = document.getElementById('posteSelect');
 
         const form = document.getElementById('form');
@@ -180,6 +208,8 @@
             fd.append('lastName', lastName);
             fd.append('email', email);
             fd.append('poste', poste);
+            fd.append('consentStorageData', document.getElementById('consentStorageData').checked ? 'true' : 'false');
+            fd.append('consentShareData', document.getElementById('consentShareData').checked ? 'true' : 'false');
             if (cvInput.files[0]) fd.append('cvFile', cvInput.files[0]);
             if (lmInput.files[0]) fd.append('letterFile', lmInput.files[0]);
 

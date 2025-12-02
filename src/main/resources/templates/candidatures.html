@@ -69,6 +69,8 @@
             background: #dc2626;
         }
 
+        .controls{display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap}
+
     </style>
 </head>
 
@@ -82,6 +84,14 @@
         </div>
     </div>
 
+    <div id="detailsModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+        <div style="position:relative; width:90%; max-width:900px; margin:40px auto; background:white; padding:30px; border-radius:8px; max-height:90vh; overflow-y:auto;">
+            <button onclick="closeDetailsModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            <h3 style="margin-bottom:20px;">Détails de la candidature</h3>
+            <div id="detailsContent" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; font-size:0.95rem;"></div>
+        </div>
+    </div>
+
     <div class="card">
         <h2>Liste des candidats</h2>
         <p class="muted">CV et lettre liés par candidat.</p>
@@ -91,12 +101,12 @@
             <select id="posteFilter">
                 <option value="">Tous les postes</option>
             </select>
+            <a href="/postes" class="btn" style="background:#2563eb; padding:8px 12px;">Gérer les postes</a>
         </div>
 
         <div id="content"><div class="empty">Chargement...</div></div>
     </div>
 
-    <!-- Bouton pour accéder à l'accueil (index.html) placé après le bloc -->
     <a href="/" class="home-btn" aria-label="Aller à l'accueil">
         <span class="home-icon" aria-hidden="true">
             <!-- petit icône maison SVG -->
@@ -129,9 +139,10 @@
                     const letterLink = c.letter ? `<a class="btn" href="/download/letter/${encodeURIComponent(c.letter)}" download>Lettre</a>` : '<span class="muted">Pas de lettre</span>';
                     const answer = `<a class="btn btn-answer" href="/answer/${encodeURIComponent(c.id)}">Répondre</a>`;
                     const transfer = `<a class="btn btn-transfer" href="#" onclick="handleTransfer(${encodeURIComponent(c.id)}); return false;">Transférer</a>`;
+                    const visualize = `<a class="btn" style="background:#6366f1;" href="#" onclick="handleVisualize(${encodeURIComponent(c.id)}); return false;">Visualiser</a>`;
                     const del = `<a class="btn btn-delete" href="#" onclick="handleDelete(${encodeURIComponent(c.id)}); return false;">Supprimer</a>`;
 
-                    html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer} ${del}</td></tr>`;
+                    html += `<tr><td>${first}</td><td>${last}</td><td>${poste}</td><td>${cvLink}</td><td>${letterLink}</td><td>${answer} ${transfer} ${visualize} ${del}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 content.innerHTML = html;
@@ -163,6 +174,140 @@
                 content.innerHTML = '<div class="empty">Erreur lors du chargement</div>';
             }
         })();
+
+        async function handleVisualize(id) {
+            try {
+                const res = await fetch(`/api/candidate/${id}`);
+                if (!res.ok) throw new Error('Erreur serveur');
+                const candidate = await res.json();
+                displayCandidateDetails(candidate);
+            } catch (err) {
+                alert('Erreur: ' + err.message);
+            }
+        }
+
+        function displayCandidateDetails(candidate) {
+            const detailsContent = document.getElementById('detailsContent');
+            
+            const consentStorage = candidate.consentStorageData ? 'Oui' : 'Non';
+            const consentShare = candidate.consentShareData ? 'Oui' : 'Non';
+
+            let competences = '—';
+            try {
+                if (candidate.competences) {
+                    competences = JSON.parse(candidate.competences).join(', ');
+                }
+            } catch(e) { competences = candidate.competences || '—'; }
+
+            let softSkills = '—';
+            try {
+                if (candidate.softSkills) {
+                    softSkills = JSON.parse(candidate.softSkills).join(', ');
+                }
+            } catch(e) { softSkills = candidate.softSkills || '—'; }
+
+            let permis = '—';
+            try {
+                if (candidate.permisDeConduite) {
+                    permis = JSON.parse(candidate.permisDeConduite).join(', ');
+                }
+            } catch(e) { permis = candidate.permisDeConduite || '—'; }
+
+            let langues = '—';
+            try {
+                if (candidate.langues) {
+                    langues = JSON.parse(candidate.langues).join(', ');
+                }
+            } catch(e) { langues = candidate.langues || '—'; }
+
+            let html = `
+                <div>
+                    <strong>ID Candidature:</strong>
+                    <p>${candidate.id || '—'}</p>
+                </div>
+                <div>
+                    <strong>Prénom:</strong>
+                    <p>${candidate.firstName || '—'}</p>
+                </div>
+                <div>
+                    <strong>Nom:</strong>
+                    <p>${candidate.lastName || '—'}</p>
+                </div>
+                <div>
+                    <strong>Email:</strong>
+                    <p>${candidate.email || '—'}</p>
+                </div>
+                <div>
+                    <strong>Téléphone:</strong>
+                    <p>${candidate.telephone || '—'}</p>
+                </div>
+                <div>
+                    <strong>Poste visé:</strong>
+                    <p>${candidate.poste || '—'}</p>
+                </div>
+                <div>
+                    <strong>Date de disponibilité:</strong>
+                    <p>${candidate.dateDisponibilite || '—'}</p>
+                </div>
+                <div>
+                    <strong>Date de candidature:</strong>
+                    <p>${candidate.dateCandidature || '—'}</p>
+                </div>
+                <div>
+                    <strong>CV:</strong>
+                    <p>${candidate.cvFileName ? `<a href="/download/cv/${encodeURIComponent(candidate.cvFileName)}" download>${candidate.cvFileName}</a>` : '—'}</p>
+                </div>
+                <div>
+                    <strong>Lettre de motivation:</strong>
+                    <p>${candidate.letterFileName ? `<a href="/download/letter/${encodeURIComponent(candidate.letterFileName)}" download>${candidate.letterFileName}</a>` : '—'}</p>
+                </div>
+                <div>
+                    <strong>Compétences:</strong>
+                    <p>${competences}</p>
+                </div>
+                <div>
+                    <strong>Soft Skills:</strong>
+                    <p>${softSkills}</p>
+                </div>
+                <div>
+                    <strong>Permis de conduite:</strong>
+                    <p>${permis}</p>
+                </div>
+                <div>
+                    <strong>Langues:</strong>
+                    <p>${langues}</p>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <strong>Diplômes:</strong>
+                    <p>${candidate.diplomes ? `<pre style="background:#f8f9fa; padding:10px; border-radius:4px; overflow-x:auto;">${candidate.diplomes}</pre>` : '—'}</p>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <strong>Expériences:</strong>
+                    <p>${candidate.experiences ? `<pre style="background:#f8f9fa; padding:10px; border-radius:4px; overflow-x:auto;">${candidate.experiences}</pre>` : '—'}</p>
+                </div>
+                <div>
+                    <strong>Consentement stockage données:</strong>
+                    <p>${consentStorage}</p>
+                </div>
+                <div>
+                    <strong>Consentement partage données:</strong>
+                    <p>${consentShare}</p>
+                </div>
+            `;
+
+            detailsContent.innerHTML = html;
+            document.getElementById('detailsModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDetailsModal();
+        });
 
         async function handleTransfer(id) {
            try {
