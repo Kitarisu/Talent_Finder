@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -30,6 +29,8 @@ import java.util.Map;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller
 public class UploadController {
@@ -292,5 +293,68 @@ public class UploadController {
         return candidateRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/api/candidate/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addCandidateFromJson(@RequestBody Map<String, Object> jsonData) {
+        try {
+            Candidate candidate = new Candidate();
+            
+            // Extraction des champs du JSON
+            candidate.setFirstName((String) jsonData.get("prenom"));
+            candidate.setLastName((String) jsonData.get("nom"));
+            candidate.setEmail((String) jsonData.get("mail"));
+            candidate.setPoste((String) jsonData.get("posteVise"));
+            candidate.setTelephone((String) jsonData.get("telephone"));
+            candidate.setDateCandidature((String) jsonData.get("dateCandidature"));
+            
+            // Nom complet
+            String firstName = (String) jsonData.get("prenom");
+            String lastName = (String) jsonData.get("nom");
+            candidate.setName((firstName + " " + lastName).trim());
+            
+            // Conversion des listes en JSON strings
+            ObjectMapper mapper = new ObjectMapper();
+            if (jsonData.get("competences") != null) {
+                candidate.setCompetences(mapper.writeValueAsString(jsonData.get("competences")));
+            }
+            if (jsonData.get("langues") != null) {
+                candidate.setLangues(mapper.writeValueAsString(jsonData.get("langues")));
+            }
+            if (jsonData.get("diplomes") != null) {
+                candidate.setDiplomes(mapper.writeValueAsString(jsonData.get("diplomes")));
+            }
+            if (jsonData.get("experiences") != null) {
+                candidate.setExperiences(mapper.writeValueAsString(jsonData.get("experiences")));
+            }
+            if (jsonData.get("permisDeConduite") != null) {
+                candidate.setPermisDeConduite(mapper.writeValueAsString(jsonData.get("permisDeConduite")));
+            }
+            
+            // Fichiers (noms seulement, pas de données binaires)
+            Map<String, String> fichiers = (Map<String, String>) jsonData.get("fichiers");
+            if (fichiers != null) {
+                candidate.setCvFileName(fichiers.get("cv_filename"));
+                candidate.setLetterFileName(fichiers.get("lm_filename"));
+            }
+            
+            // Consentements (par défaut false)
+            candidate.setConsentStorageData(false);
+            candidate.setConsentShareData(false);
+            
+            // Sauvegarder
+            Candidate saved = candidateRepository.save(candidate);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", saved.getId());
+            response.put("message", "Candidature ajoutée avec succès");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", "Erreur lors de l'ajout: " + e.getMessage()));
+        }
     }
 }
