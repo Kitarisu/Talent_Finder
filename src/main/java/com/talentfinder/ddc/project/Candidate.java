@@ -32,7 +32,6 @@ public class Candidate {
     private byte[] letterData;
 
     private String telephone;
-    private String dateDisponibilite;
     private String dateCandidature;
     
     @Lob
@@ -100,9 +99,6 @@ public class Candidate {
 
     public String getTelephone() { return telephone; }
     public void setTelephone(String telephone) { this.telephone = telephone; }
-
-    public String getDateDisponibilite() { return dateDisponibilite; }
-    public void setDateDisponibilite(String dateDisponibilite) { this.dateDisponibilite = dateDisponibilite; }
 
     public String getDateCandidature() { return dateCandidature; }
     public void setDateCandidature(String dateCandidature) { this.dateCandidature = dateCandidature; }

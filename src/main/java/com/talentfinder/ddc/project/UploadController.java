@@ -28,12 +28,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 @Controller
 public class UploadController {
 
     @Autowired
     private CandidateRepository candidateRepository;
     private static final String UPLOAD_DIR = "uploads/";
+
+    @Autowired
+    private PDFExtractionService pdfExtractionService;
 
     @PostMapping("/apply")
     public String handleFileUpload(@RequestParam("firstName") String firstName,
@@ -61,10 +67,34 @@ public class UploadController {
             candidate.setEmail(email);
             candidate.setConsentStorageData(consentStorageData);
             candidate.setConsentShareData(consentShareData);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            candidate.setDateCandidature(LocalDateTime.now().format(formatter));
 
             candidate.setCvFileName(cvName);
             candidate.setCvContentType(cvType);
             candidate.setCvData(cvBytes);
+
+            // Extraire les données du CV
+            try {
+                Map<String, Object> cvData = pdfExtractionService.extractCVData(file);
+                if (cvData.containsKey("telephone")) {
+                    candidate.setTelephone((String) cvData.get("telephone"));
+                }
+                if (cvData.containsKey("competences")) {
+                    candidate.setCompetences((String) cvData.get("competences"));
+                }
+                if (cvData.containsKey("langues")) {
+                    candidate.setLangues((String) cvData.get("langues"));
+                }
+                if (cvData.containsKey("diplomes")) {
+                    candidate.setDiplomes((String) cvData.get("diplomes"));
+                }
+                if (cvData.containsKey("experiences")) {
+                    candidate.setExperiences((String) cvData.get("experiences"));
+                }
+            } catch (IOException e) {
+                System.err.println("Erreur lors de l'extraction du CV: " + e.getMessage());
+            }
 
             if (letter != null && !letter.isEmpty()) {
                 candidate.setLetterFileName(letter.getOriginalFilename());
@@ -263,5 +293,4 @@ public class UploadController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 }

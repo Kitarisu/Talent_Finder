@@ -55,8 +55,8 @@
         <input type="email" id="email" name="email" required>
 
         <label>Poste :</label>
-        <select id="posteSelect" name="poste">
-            <option value="">Choisir</option>
+        <select id="posteSelect" name="poste" required>
+            <option value="">Choisir un poste</option>
         </select>
 
         <div class="zones">
@@ -200,6 +200,11 @@
 
             if (!firstName || !lastName || !email) {
                 status.textContent = 'Prénom, nom et email sont requis.';
+                return;
+            }
+
+            if (!poste) {
+                status.textContent = 'Vous devez choisir un poste.';
                 return;
             }
 
