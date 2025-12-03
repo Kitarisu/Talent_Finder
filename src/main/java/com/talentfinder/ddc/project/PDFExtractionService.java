@@ -90,7 +90,7 @@ public class PDFExtractionService {
     private List<String> extractDiplomes(String text) {
         List<String> diplomes = new ArrayList<>();
         String[] keywords = {"Licence", "Master", "Baccalauréat", "BTS", "BUT", "DUT", "DEUG", 
-                            "Ingénieur", "MBA", "DEUST", "Diplôme", "Certificat"};
+                            "Ingénieur", "MBA", "DEUST"};
         
         String lowerText = text.toLowerCase();
         for (String keyword : keywords) {
