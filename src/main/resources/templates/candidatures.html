@@ -98,6 +98,24 @@
             <button onclick="closeJsonModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
             <h3 style="margin-bottom:20px;">Résultat du transfert</h3>
             <pre id="jsonResult" style="background:#f8f9fa; padding:20px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;"></pre>
+            <div style="display:flex; gap:10px; margin-bottom:30px; flex-wrap:wrap;">
+                <button onclick="copyJsonToClipboard()" style="padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;">📋 Copier le JSON</button>
+                <button onclick="downloadJsonFile()" style="padding:8px 16px; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer;">⬇️ Télécharger JSON</button>
+            </div>
+
+            <hr style="margin:30px 0; border:none; border-top:2px solid #e5e7eb;">
+
+            <h4 style="margin-bottom:15px;">Envoyer à une entreprise</h4>
+            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <label for="companySelect" style="display:block; margin-bottom:5px; font-weight:bold;">Sélectionnez une entreprise :</label>
+                    <select id="companySelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:0.95rem;">
+                        <option value="">-- Choisir une entreprise --</option>
+                    </select>
+                </div>
+                <button onclick="sendJsonToCompany()" style="padding:8px 16px; background:#f59e0b; color:white; border:none; border-radius:4px; cursor:pointer;">📤 Envoyer</button>
+            </div>
+            <div id="sendStatus" style="margin-top:15px; padding:10px; border-radius:4px; display:none;"></div>
         </div>
     </div>
 
@@ -423,14 +441,140 @@
             if (e.target === this) closeDetailsModal();
         });
 
+        // Variables globales pour le JSON
+        let currentJsonData = null;
+
         async function handleTransfer(id) {
-           try {
+        try {
                 const res = await fetch(`/transfer/${id}`);
                 if (!res.ok) throw new Error('Erreur serveur');
                 const data = await res.json();
+                currentJsonData = data; // Sauvegarder pour les actions
                 showJsonModal(data);
+                loadCompanies(); // Charger les entreprises
             } catch (err) {
                 alert('Erreur: ' + err.message);
+            }
+        }
+
+        function showJsonModal(data) {
+            document.getElementById('jsonResult').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('jsonModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeJsonModal() {
+            document.getElementById('jsonModal').style.display = 'none';
+            document.body.style.overflow = '';
+            currentJsonData = null;
+            document.getElementById('companySelect').innerHTML = '<option value="">-- Choisir une entreprise --</option>';
+            document.getElementById('sendStatus').style.display = 'none';
+        }
+
+        document.getElementById('jsonModal').addEventListener('click', function(e) {
+            if (e.target === this) closeJsonModal();
+        });
+
+        // Copier le JSON dans le presse-papiers
+        function copyJsonToClipboard() {
+            if (!currentJsonData) return;
+            const jsonString = JSON.stringify(currentJsonData, null, 2);
+            navigator.clipboard.writeText(jsonString).then(() => {
+                showStatus('✓ JSON copié dans le presse-papiers', 'success');
+            }).catch(err => {
+                showStatus('✗ Erreur lors de la copie', 'error');
+            });
+        }
+
+        // Télécharger le JSON en fichier
+        function downloadJsonFile() {
+            if (!currentJsonData) return;
+            const jsonString = JSON.stringify(currentJsonData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `candidature_${currentJsonData.idCandidature}_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showStatus('✓ Fichier téléchargé', 'success');
+        }
+
+        // Charger les entreprises depuis la BDD
+        async function loadCompanies() {
+            try {
+                const res = await fetch('/api/companies');
+                if (!res.ok) return;
+                const companies = await res.json();
+                const select = document.getElementById('companySelect');
+                select.innerHTML = '<option value="">-- Choisir une entreprise --</option>';
+                companies.forEach(company => {
+                    const opt = document.createElement('option');
+                    opt.value = company.id;
+                    opt.textContent = company.name;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Erreur chargement entreprises:', err);
+            }
+        }
+
+        // Envoyer le JSON à l'entreprise sélectionnée
+        async function sendJsonToCompany() {
+            if (!currentJsonData) {
+                showStatus('✗ Aucun JSON à envoyer', 'error');
+                return;
+            }
+
+            const companyId = document.getElementById('companySelect').value;
+            if (!companyId) {
+                showStatus('✗ Veuillez sélectionner une entreprise', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Envoi en cours...', 'info');
+                
+                const res = await fetch(`/api/transfer/send/${companyId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentJsonData)
+                });
+
+                if (!res.ok) throw new Error('Erreur serveur');
+                
+                const result = await res.json();
+                showStatus('✓ JSON envoyé avec succès à l\'entreprise', 'success');
+                
+                // Réinitialiser après 2 secondes
+                setTimeout(() => {
+                    document.getElementById('sendStatus').style.display = 'none';
+                }, 2000);
+            } catch (err) {
+                showStatus('✗ Erreur: ' + err.message, 'error');
+            }
+        }
+
+        // Afficher les messages de statut
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('sendStatus');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                statusDiv.style.background = '#d1fae5';
+                statusDiv.style.color = '#047857';
+                statusDiv.style.border = '1px solid #6ee7b7';
+            } else if (type === 'error') {
+                statusDiv.style.background = '#fee2e2';
+                statusDiv.style.color = '#dc2626';
+                statusDiv.style.border = '1px solid #fca5a5';
+            } else if (type === 'info') {
+                statusDiv.style.background = '#dbeafe';
+                statusDiv.style.color = '#1e40af';
+                statusDiv.style.border = '1px solid #93c5fd';
             }
         }
 

@@ -357,4 +357,31 @@ public class UploadController {
                     .body(Map.of("message", "Erreur lors de l'ajout: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/api/transfer/send/{companyId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> sendTransferToCompany(
+            @PathVariable Long companyId,
+            @RequestBody Map<String, Object> candidateData) {
+        try {
+            // Vérifier que l'entreprise existe
+            // (dans un vrai système, on ferait une vérification en BDD)
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Données transférées avec succès à l'entreprise " + companyId);
+            response.put("candidateId", candidateData.get("idCandidature"));
+            response.put("companyId", companyId);
+            response.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            // Dans un vrai projet, on enverrait les données ici (API externe, email, etc.)
+            System.out.println("Transfer envoyé à l'entreprise " + companyId + 
+                             " pour le candidat: " + candidateData.get("idCandidature"));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("success", false, "message", "Erreur: " + e.getMessage()));
+        }
+    }
 }
