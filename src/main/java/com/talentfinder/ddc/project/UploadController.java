@@ -75,9 +75,10 @@ public class UploadController {
             candidate.setCvContentType(cvType);
             candidate.setCvData(cvBytes);
 
-            // Extraire les données du CV
+            // Extraire les données du CV (avec enrichissement LLM)
             try {
-                Map<String, Object> cvData = pdfExtractionService.extractCVData(file);
+                Map<String, Object> cvData = pdfExtractionService.extractCVData(file, letter);
+                
                 if (cvData.containsKey("telephone")) {
                     candidate.setTelephone((String) cvData.get("telephone"));
                 }
@@ -92,6 +93,12 @@ public class UploadController {
                 }
                 if (cvData.containsKey("experiences")) {
                     candidate.setExperiences((String) cvData.get("experiences"));
+                }
+                if (cvData.containsKey("softSkills")) {
+                    candidate.setSoftSkills((String) cvData.get("softSkills"));
+                }
+                if (cvData.containsKey("permisDeConduite")) {
+                    candidate.setPermisDeConduite((String) cvData.get("permisDeConduite"));
                 }
             } catch (IOException e) {
                 System.err.println("Erreur lors de l'extraction du CV: " + e.getMessage());
