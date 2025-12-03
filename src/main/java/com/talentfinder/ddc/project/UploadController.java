@@ -259,9 +259,6 @@ public class UploadController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-
-
-
     @GetMapping("/transfer/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> transferCandidate(@PathVariable Long id) {
@@ -272,17 +269,18 @@ public class UploadController {
                     data.put("nom", c.getLastName());
                     data.put("prenom", c.getFirstName());
                     data.put("mail", c.getEmail());
-                    data.put("telephone", ""); // à compléter si champ ajouté dans Candidate
+                    data.put("telephone", c.getTelephone() != null ? c.getTelephone() : "");
                     data.put("posteVise", c.getPoste());
                     data.put("dateDisponibilite", "");
-                    data.put("dateCandidature", "");
+                    data.put("dateCandidature", c.getDateCandidature() != null ? c.getDateCandidature() : "");
 
-                    // Exemples de structures vides (à enrichir si tu ajoutes ces infos plus tard)
-                    data.put("diplomes", List.of());
-                    data.put("experiences", List.of());
-                    data.put("competences", List.of());
-                    data.put("permisDeConduite", List.of());
-                    data.put("langues", List.of());
+                    // Récupérer les données extraites depuis la BDD
+                    data.put("diplomes", c.getDiplomes() != null ? c.getDiplomes() : "");
+                    data.put("experiences", c.getExperiences() != null ? c.getExperiences() : "");
+                    data.put("competences", c.getCompetences() != null ? c.getCompetences() : "");
+                    data.put("permisDeConduite", c.getPermisDeConduite() != null ? c.getPermisDeConduite() : "");
+                    data.put("langues", c.getLangues() != null ? c.getLangues() : "");
+                    data.put("softSkills", c.getSoftSkills() != null ? c.getSoftSkills() : "");
 
                     Map<String, Object> fichiers = new HashMap<>();
                     fichiers.put("cv_filename", c.getCvFileName());
